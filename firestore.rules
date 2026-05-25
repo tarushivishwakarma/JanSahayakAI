@@ -1,0 +1,19 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Applications: users can read/write their own; admins can read all
+    match /applications/{appId} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null;
+      allow read, write: if request.auth != null &&
+        request.auth.token.email in ['admin@jansahayak.in', 'admin@test.com'];
+    }
+
+    // Diagnostics (for testing only – remove in production)
+    match /_diagnostics/{docId} {
+      allow read, write: if true;
+    }
+
+  }
+}

@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description"
+    content="JanSahayak AI – Find government schemes you're eligible for. Apply for Aadhaar correction, PAN update, scholarships, pensions and more." />
+  <meta name="keywords" content="government schemes, Jan Sahayak, Aadhaar, PAN, scholarship, pension, India" />
+  <meta property="og:title" content="JanSahayak AI – Government Scheme Finder" />
+  <meta property="og:description" content="Instantly find and apply for government schemes you are eligible for." />
+  <title>JanSahayak AI – Government Scheme Finder</title>
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🇮🇳</text></svg>" />
+  <link rel="stylesheet" href="css/styles.css" />
+
+  <!-- Firebase (compat v9) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="js/firebase-config.js"></script>
+</head>
+
+<body data-theme="dark">
+
+  <!-- Skip to main content (accessibility) -->
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <!-- ======================== NAVBAR ======================== -->
+  <nav id="navbar" role="navigation" aria-label="Main navigation">
+    <div class="nav-inner">
+      <div class="nav-logo" id="nav-home-btn" tabindex="0" role="button" aria-label="Go to home">
+        <div class="nav-logo-icon" aria-hidden="true">✨</div>
+        <span class="nav-logo-text gradient-text" id="nav-brand-text">JanSahayak AI</span>
+      </div>
+
+      <div class="nav-links" role="menubar">
+        <button class="nav-link" id="nav-dashboard-btn" role="menuitem"
+          aria-label="Services dashboard">Services</button>
+        <button class="nav-link" id="nav-chatbot-btn" role="menuitem" aria-label="Find schemes">Find Schemes</button>
+        <button class="nav-link" id="nav-tracker-btn" role="menuitem" aria-label="Track applications">Track
+          Applications</button>
+        <button class="nav-link" id="nav-admin-btn" role="menuitem" aria-label="Admin dashboard"
+          style="display:none">Admin</button>
+      </div>
+
+      <div class="nav-actions">
+        <!-- Language toggle -->
+        <button class="btn btn-outline btn-sm" id="lang-toggle" aria-label="Toggle language">🌐 हिंदी</button>
+        <!-- Theme toggle -->
+        <button class="btn btn-ghost btn-icon" id="theme-toggle" aria-label="Toggle dark/light mode"
+          title="Toggle theme">🌙</button>
+        <!-- User area -->
+        <div id="nav-auth-area">
+          <button class="btn btn-primary btn-sm" id="nav-login-btn" aria-label="Login or signup">Login</button>
+        </div>
+        <div id="nav-user-area" class="hidden">
+          <div class="nav-user" id="nav-user-info">
+            <div class="nav-avatar" id="nav-avatar">U</div>
+            <span id="nav-username" style="font-size:0.85rem">User</span>
+          </div>
+          <button class="btn btn-ghost btn-sm" id="nav-logout-btn" aria-label="Logout">Logout</button>
+        </div>
+        <!-- Hamburger -->
+        <button class="btn btn-icon btn-ghost" id="hamburger" aria-label="Toggle menu" aria-expanded="false">☰</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Mobile nav menu -->
+  <div class="mobile-menu" id="mobile-menu" role="menu" aria-label="Mobile navigation">
+    <button class="mobile-nav-link" id="m-nav-dashboard">Services</button>
+    <button class="mobile-nav-link" id="m-nav-chatbot">Find Schemes</button>
+    <button class="mobile-nav-link" id="m-nav-tracker">Track Applications</button>
+    <button class="mobile-nav-link" id="m-nav-admin" style="display:none">Admin</button>
+  </div>
+
+  <!-- ======================== MAIN APP ======================== -->
+  <main id="main-content">
+
+    <!-- ===== LANDING PAGE ===== -->
+    <section id="page-landing" class="page active" role="main" aria-label="Landing page">
+      <div class="hero-bg" aria-hidden="true"></div>
+      <div class="hero">
+
+        <!-- Logo -->
+        <div class="hero-logo animate-in" aria-hidden="true">✨</div>
+
+        <!-- Title -->
+        <h1 class="animate-in delay-1">
+          <span class="gradient-text" id="hero-title">JanSahayak AI</span>
+        </h1>
+        <p class="animate-in delay-2" id="hero-tagline">
+          Find Government Schemes You Are Eligible For in Seconds
+        </p>
+
+        <!-- CTA Buttons -->
+        <div class="hero-btns animate-in delay-3">
+          <button class="btn btn-primary btn-lg" id="hero-start-chat" aria-label="Start scheme finder chatbot">
+            💬 <span id="btn-start-chat-text">Start Chat</span>
+          </button>
+          <button class="btn btn-outline btn-lg" id="hero-try-demo" aria-label="Try demo mode">
+            📋 <span id="btn-try-demo-text">Try Demo</span>
+          </button>
+          <button class="btn btn-outline btn-lg" id="hero-services-btn" aria-label="Go to service dashboard">
+            🗂️ <span id="btn-services-text">Services</span>
+          </button>
+        </div>
+
+        <!-- Feature Cards -->
+        <div class="feature-cards animate-in delay-4">
+          <div class="glass feature-card" tabindex="0">
+            <div class="icon">🤖</div>
+            <h3 id="feat1-title">Smart AI Assistant</h3>
+            <p id="feat1-desc">Answer simple questions and get personalized scheme recommendations</p>
+          </div>
+          <div class="glass feature-card delay-1 animate-in" tabindex="0">
+            <div class="icon">🎤</div>
+            <h3 id="feat2-title">Voice Support</h3>
+            <p id="feat2-desc">Speak in Hindi or English and get instant results</p>
+          </div>
+          <div class="glass feature-card delay-2 animate-in" tabindex="0">
+            <div class="icon">📄</div>
+            <h3 id="feat3-title">Apply Easily</h3>
+            <p id="feat3-desc">Get step-by-step guidance and required documents list</p>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="hero-stats animate-in delay-5">
+          <div class="hero-stat">
+            <div class="num" id="stat1-num">25+</div>
+            <div class="label" id="stat1-label">Schemes</div>
+          </div>
+          <div class="hero-stat">
+            <div class="num" id="stat2-num">All</div>
+            <div class="label" id="stat2-label">States</div>
+          </div>
+          <div class="hero-stat">
+            <div class="num" id="stat3-num">2</div>
+            <div class="label" id="stat3-label">Languages</div>
+          </div>
+          <div class="hero-stat">
+            <div class="num">6</div>
+            <div class="label" id="stat4-label">Services</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ===== SERVICE DASHBOARD ===== -->
+    <section id="page-dashboard" class="page" role="main" aria-label="Service dashboard">
+      <div class="page-content">
+        <div class="section-header">
+          <h2 id="dash-title">Smart Services</h2>
+          <p id="dash-subtitle">Select a service to begin your application</p>
+        </div>
+
+        <!-- OCR Upload Banner -->
+        <div class="glass"
+          style="padding:1rem 1.5rem; display:flex; align-items:center; gap:1rem; margin-bottom:2rem; border-left:3px solid var(--color-orange)">
+          <span style="font-size:1.5rem">🔍</span>
+          <div style="flex:1">
+            <strong id="ocr-banner-title">AI Document AutoFill</strong>
+            <p style="font-size:0.85rem; color:var(--color-text-muted)" id="ocr-banner-desc">Upload your Aadhaar or PAN
+              card image to auto-fill forms instantly</p>
+          </div>
+          <button class="btn btn-outline btn-sm" id="ocr-trigger-btn"
+            aria-label="Upload document for auto-fill">Upload</button>
+        </div>
+
+        <!-- Service Cards Grid -->
+        <div class="grid-3" id="service-cards-grid">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SCHEME FINDER CHATBOT ===== -->
+    <section id="page-chatbot" class="page" role="main" aria-label="Scheme finder chatbot">
+      <!-- Header -->
+      <div class="chat-header">
+        <div class="chat-header-info">
+          <div class="chat-avatar" aria-hidden="true">🤖</div>
+          <div>
+            <div class="chat-title" id="chat-title">JanSahayak AI</div>
+            <div class="chat-subtitle" id="chat-subtitle">Smart Assistant</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:0.5rem;align-items:center">
+          <button class="btn btn-outline btn-sm" id="chat-back-btn" aria-label="Go back to home">← Back</button>
+        </div>
+      </div>
+
+      <!-- Progress Bar -->
+      <div class="chat-progress">
+        <div class="progress-bar-container" role="progressbar" aria-label="Question progress" aria-valuenow="0"
+          aria-valuemin="0" aria-valuemax="100" id="chat-progress-bar-wrap">
+          <div class="progress-bar-fill" id="chat-progress-fill" style="width:0%"></div>
+        </div>
+        <div class="progress-text" id="chat-progress-text">Question 1 of 8</div>
+      </div>
+
+      <!-- Messages -->
+      <div class="chat-messages" id="chat-messages" role="log" aria-live="polite" aria-label="Chat messages">
+        <!-- Messages rendered by JS -->
+      </div>
+
+      <!-- Options area -->
+      <div class="chat-options" id="chat-options-area" style="display:none">
+        <div class="chat-options-grid" id="chat-options-grid" role="group" aria-label="Answer options">
+          <!-- Options rendered by JS -->
+        </div>
+      </div>
+
+      <!-- Input area -->
+      <div class="chat-input-area">
+        <div class="chat-input-row">
+          <input type="text" class="form-input" id="chat-text-input" placeholder="Type your answer..."
+            aria-label="Type your answer" autocomplete="off" />
+          <button class="mic-btn" id="chat-mic-btn" aria-label="Voice input" title="Voice input">🎤</button>
+          <button class="btn btn-primary btn-icon" id="chat-send-btn" aria-label="Send message">➤</button>
+        </div>
+        <p id="chat-listening-text" class="listening-text" style="display:none">🎤 Listening…</p>
+      </div>
+    </section>
+
+    <!-- ===== SCHEME RESULTS ===== -->
+    <section id="page-results" class="page" role="main" aria-label="Scheme results">
+      <div class="page-content">
+
+        <!-- View toggle (results / dashboard) -->
+        <div id="results-view" class="results-view">
+          <div class="results-header">
+            <div>
+              <h2 id="results-title">Your Matched Schemes</h2>
+              <p id="results-match-text" style="color:var(--color-green-light)">Loading…</p>
+            </div>
+            <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+              <button class="btn btn-outline btn-sm" id="view-dashboard-btn" aria-label="View analytics dashboard">📊
+                Dashboard</button>
+              <button class="btn btn-outline btn-sm" id="results-back-btn" aria-label="Start new search">← New
+                Search</button>
+            </div>
+          </div>
+          <div id="scheme-cards-container" class="grid-2">
+            <!-- Scheme cards rendered by JS -->
+          </div>
+        </div>
+
+        <!-- Dashboard view -->
+        <div id="dashboard-view" style="display:none">
+          <div style="display:flex;gap:0.5rem;margin-bottom:1.5rem">
+            <button class="btn btn-outline btn-sm" id="back-to-results-btn" aria-label="Back to results">← Back to
+              Schemes</button>
+          </div>
+          <div class="grid-3" style="margin-bottom:1.5rem" id="dashboard-stats-grid">
+            <!-- Stats rendered by JS -->
+          </div>
+          <div class="glass" style="padding:1.5rem" id="dashboard-breakdown">
+            <!-- Breakdown list rendered by JS -->
+          </div>
+        </div>
+
+        <!-- Scheme Detail view -->
+        <div id="scheme-detail-view" style="display:none">
+          <div style="margin-bottom:1rem">
+            <button class="btn btn-outline btn-sm" id="back-from-detail-btn" aria-label="Back to results">← Back to
+              Results</button>
+          </div>
+          <div class="glass" style="padding:2rem" id="scheme-detail-content">
+            <!-- Detail rendered by JS -->
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ===== FORM WIZARD ===== -->
+    <section id="page-form-wizard" class="page" role="main" aria-label="Application form wizard">
+      <div class="wizard-container">
+        <div class="wizard-header">
+          <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.75rem">
+            <button class="btn btn-outline btn-sm" id="wizard-back-btn" aria-label="Go back">← Back</button>
+            <span class="wizard-service-name" id="wizard-service-name">Service Name</span>
+          </div>
+          <div class="wizard-progress-wrap">
+            <div class="wizard-progress-bar" role="progressbar" aria-label="Form progress" aria-valuenow="0"
+              aria-valuemin="0" aria-valuemax="100">
+              <div class="wizard-progress-fill" id="wizard-progress-fill" style="width:0%"></div>
+            </div>
+            <p style="font-size:0.75rem;color:var(--color-text-muted);text-align:right;margin-top:0.3rem"
+              id="wizard-progress-text">Step 1 of 5</p>
+          </div>
+        </div>
+
+        <div id="wizard-step-container">
+          <!-- Step content rendered by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== APPLICATION TRACKER ===== -->
+    <section id="page-tracker" class="page" role="main" aria-label="Application tracker">
+      <div class="page-content">
+        <div class="section-header">
+          <h2 id="tracker-title">Track Applications</h2>
+          <p id="tracker-subtitle">Monitor the status of your submitted applications</p>
+        </div>
+
+        <div id="tracker-list" style="display:flex;flex-direction:column;gap:0.75rem">
+          <!-- Cards rendered by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== ADMIN DASHBOARD ===== -->
+    <section id="page-admin" class="page" role="main" aria-label="Admin dashboard">
+      <div class="page-content">
+        <div class="section-header"
+          style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1rem">
+          <div>
+            <h2 id="admin-title">Admin Dashboard</h2>
+            <p id="admin-subtitle">Manage applications and view analytics</p>
+          </div>
+          <button class="btn btn-outline btn-sm" id="admin-refresh-btn" aria-label="Refresh data">🔄 Refresh</button>
+        </div>
+
+        <!-- Analytics Cards -->
+        <div class="grid-4" style="margin-bottom:2rem" id="admin-analytics-grid">
+          <!-- Cards rendered by JS -->
+        </div>
+
+        <!-- Applications Table -->
+        <div class="admin-table-wrap">
+          <table class="admin-table" aria-label="Applications table">
+            <thead>
+              <tr>
+                <th>App ID</th>
+                <th id="th-user">User</th>
+                <th id="th-service">Service</th>
+                <th id="th-date">Date</th>
+                <th id="th-status">Status</th>
+                <th id="th-action">Action</th>
+              </tr>
+            </thead>
+            <tbody id="admin-table-body">
+              <!-- Rows rendered by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main><!-- end #main-content -->
+
+  <!-- ======================== AUTH MODAL ======================== -->
+  <div id="auth-modal" class="modal-overlay hidden" role="dialog" aria-modal="true"
+    aria-labelledby="auth-modal-heading">
+    <div class="modal-box">
+      <button class="modal-close" id="auth-modal-close" aria-label="Close modal">✕</button>
+      <h2 id="auth-modal-heading" style="margin-bottom:1.25rem;font-size:1.3rem" class="gradient-text">Welcome to
+        JanSahayak</h2>
+
+      <!-- Tabs -->
+      <div class="modal-tabs" role="tablist">
+        <button class="modal-tab active" id="tab-login" role="tab" aria-selected="true"
+          aria-controls="panel-login">Login</button>
+        <button class="modal-tab" id="tab-signup" role="tab" aria-selected="false" aria-controls="panel-signup">Sign
+          Up</button>
+      </div>
+
+      <!-- Login Panel -->
+      <div id="panel-login" role="tabpanel" aria-labelledby="tab-login">
+        <div class="form-group">
+          <label class="form-label" for="login-email">Email</label>
+          <input type="email" class="form-input" id="login-email" placeholder="you@email.com" autocomplete="email" />
+          <span class="field-error" id="login-email-error"></span>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="login-password">Password</label>
+          <input type="password" class="form-input" id="login-password" placeholder="Your password"
+            autocomplete="current-password" />
+          <span class="field-error" id="login-password-error"></span>
+        </div>
+        <button class="btn btn-primary" style="width:100%;justify-content:center;margin-bottom:0.75rem" id="btn-login"
+          aria-label="Login">Login</button>
+        <div class="modal-divider">or</div>
+        <button class="btn-google" id="btn-google-login" aria-label="Continue with Google">
+          <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+            <path fill="#EA4335"
+              d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+            <path fill="#4285F4"
+              d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+            <path fill="#FBBC05"
+              d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+            <path fill="#34A853"
+              d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.29-8.16 2.29-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+          </svg>
+          Continue with Google
+        </button>
+      </div>
+
+      <!-- Signup Panel -->
+      <div id="panel-signup" role="tabpanel" aria-labelledby="tab-signup" style="display:none">
+        <div class="form-group">
+          <label class="form-label" for="signup-name">Full Name</label>
+          <input type="text" class="form-input" id="signup-name" placeholder="Your full name" autocomplete="name" />
+          <span class="field-error" id="signup-name-error"></span>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="signup-email">Email</label>
+          <input type="email" class="form-input" id="signup-email" placeholder="you@email.com" autocomplete="email" />
+          <span class="field-error" id="signup-email-error"></span>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="signup-password">Password</label>
+          <input type="password" class="form-input" id="signup-password" placeholder="Min 6 characters"
+            autocomplete="new-password" />
+          <span class="field-error" id="signup-password-error"></span>
+        </div>
+        <button class="btn btn-primary" style="width:100%;justify-content:center;margin-bottom:0.75rem" id="btn-signup"
+          aria-label="Sign up">Sign Up</button>
+        <div class="modal-divider">or</div>
+        <button class="btn-google" id="btn-google-signup" aria-label="Continue with Google">
+          <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+            <path fill="#EA4335"
+              d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+            <path fill="#4285F4"
+              d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+            <path fill="#FBBC05"
+              d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+            <path fill="#34A853"
+              d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.29-8.16 2.29-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+          </svg>
+          Continue with Google
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== OCR MODAL ======================== -->
+  <div id="ocr-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="ocr-modal-heading">
+    <div class="modal-box">
+      <button class="modal-close" id="ocr-modal-close" aria-label="Close OCR modal">✕</button>
+      <h2 id="ocr-modal-heading" style="margin-bottom:0.5rem;font-size:1.2rem">🔍 <span class="gradient-text">AI
+          Document AutoFill</span></h2>
+      <p style="font-size:0.85rem;color:var(--color-text-muted);margin-bottom:1.25rem" id="ocr-modal-desc">Upload your
+        Aadhaar or PAN card to auto-fill form fields</p>
+
+      <div class="ocr-zone" id="ocr-drop-zone" tabindex="0" role="button" aria-label="Upload document image">
+        <div class="icon">📁</div>
+        <p id="ocr-zone-text">Click or drag & drop your document image here</p>
+        <small>Supports JPG, PNG, PDF | Max 5MB</small>
+        <input type="file" id="ocr-file-input" accept="image/*,.pdf" style="display:none"
+          aria-label="Select document file" />
+        <img id="ocr-preview" class="ocr-preview" style="display:none" alt="Document preview" />
+      </div>
+
+      <div id="ocr-result" style="display:none">
+        <h4 style="margin-bottom:0.75rem;font-size:0.9rem;font-weight:600">📋 Extracted Information:</h4>
+        <div id="ocr-fields-list" style="display:flex;flex-direction:column;gap:0.4rem"></div>
+        <div style="display:flex;gap:0.75rem;margin-top:1rem">
+          <button class="btn btn-primary" style="flex:1;justify-content:center" id="ocr-autofill-btn"
+            aria-label="Auto-fill form">✅ Auto-Fill Form</button>
+          <button class="btn btn-outline" id="ocr-reset-btn" aria-label="Upload another document">🔄 Try Again</button>
+        </div>
+      </div>
+
+      <div id="ocr-loading" style="display:none;text-align:center;padding:1.5rem">
+        <div class="spinner" style="margin:0 auto 1rem"></div>
+        <p id="ocr-loading-text">Extracting information…</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== FLOATING FAQ CHATBOT ======================== -->
+  <div id="faq-chatbot" role="complementary" aria-label="FAQ chatbot">
+    <button class="faq-toggle-btn" id="faq-toggle" aria-label="Open FAQ chatbot" aria-expanded="false">💬</button>
+    <div class="faq-panel hidden" id="faq-panel" role="dialog" aria-modal="false" aria-label="FAQ chatbot panel">
+      <div class="faq-header">
+        <div class="faq-header-text">
+          <h4 id="faq-panel-title">JanSahayak Help</h4>
+          <p id="faq-panel-subtitle">Ask about government schemes</p>
+        </div>
+        <button class="faq-close" id="faq-close" aria-label="Close FAQ chatbot">✕</button>
+      </div>
+      <div class="faq-messages" id="faq-messages" role="log" aria-live="polite">
+        <!-- Rendered by JS -->
+      </div>
+      <div class="faq-suggestions" id="faq-suggestions">
+        <!-- Quick suggestions -->
+      </div>
+      <div class="faq-input-row">
+        <input type="text" class="faq-input" id="faq-text-input" placeholder="Ask anything…"
+          aria-label="Type your FAQ question" autocomplete="off" />
+        <button class="faq-send" id="faq-send" aria-label="Send FAQ message">➤</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== ACCESSIBILITY PANEL ======================== -->
+  <div id="accessibility-panel" role="complementary" aria-label="Accessibility options">
+    <button class="a11y-toggle-btn" id="a11y-toggle" aria-label="Accessibility options" aria-expanded="false">♿</button>
+    <div class="a11y-menu hidden" id="a11y-menu" role="dialog" aria-label="Accessibility settings">
+      <h4>Accessibility</h4>
+      <div class="a11y-row">
+        <span class="a11y-label" id="a11y-contrast-label">High Contrast</span>
+        <label class="toggle-switch" aria-label="Toggle high contrast mode">
+          <input type="checkbox" id="high-contrast-toggle" aria-label="High contrast mode" />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="a11y-row">
+        <span class="a11y-label" id="a11y-font-label">Font Size</span>
+        <div class="a11y-font-btns">
+          <button class="a11y-font-btn" id="font-decrease" aria-label="Decrease font size"
+            title="Decrease font size">A-</button>
+          <button class="a11y-font-btn" id="font-reset" aria-label="Reset font size" title="Reset font size">A</button>
+          <button class="a11y-font-btn" id="font-increase" aria-label="Increase font size"
+            title="Increase font size">A+</button>
+        </div>
+      </div>
+      <div class="a11y-row">
+        <span class="a11y-label" id="a11y-keyboard-label">Keyboard Nav</span>
+        <span class="badge badge-green" style="font-size:0.7rem">ON</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== TOAST CONTAINER ======================== -->
+  <div class="toast-container" id="toast-container" aria-live="assertive" aria-atomic="true"></div>
+
+  <!-- ======================== SCRIPTS ======================== -->
+  <script type="module" src="js/app.js"></script>
+
+</body>
+
+</html>
