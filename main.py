@@ -6,8 +6,8 @@ Run: uvicorn main:app --reload
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import applications, ocr, admin
-from ai import router as llm_router
+import applications, ocr, admin
+from ai.router import router as llm_router
 
 app = FastAPI(
     title="JanSahayak API",

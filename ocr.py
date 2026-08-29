@@ -1,8 +1,8 @@
 """OCR router — Accept image uploads, return extracted document fields"""
 
 from fastapi import APIRouter, UploadFile, File, HTTPException
-from models.schemas import OcrResponse
-from services.ocr_service import extract_text_from_image
+from schemas import OcrResponse
+from ocr_service import extract_text_from_image
 
 router = APIRouter()
 

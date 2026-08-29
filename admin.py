@@ -4,9 +4,9 @@ from fastapi import APIRouter, HTTPException, Header
 from typing import Optional
 import os
 
-from models.schemas import AnalyticsResponse, StatusUpdate
-from services import firebase_service
-from routers.applications import _in_memory_store
+from schemas import AnalyticsResponse, StatusUpdate
+import firebase_service
+from applications import _in_memory_store
 
 router = APIRouter()
 
