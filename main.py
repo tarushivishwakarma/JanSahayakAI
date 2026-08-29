@@ -7,6 +7,7 @@ Run: uvicorn main:app --reload
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers import applications, ocr, admin
+from ai import router as llm_router
 
 app = FastAPI(
     title="JanSahayak API",
@@ -35,6 +36,7 @@ app.add_middleware(
 app.include_router(applications.router, prefix="/api", tags=["Applications"])
 app.include_router(ocr.router, prefix="/api", tags=["OCR"])
 app.include_router(admin.router, prefix="/api", tags=["Admin"])
+app.include_router(llm_router, prefix="/api/llm", tags=["LLM"])
 
 
 @app.get("/", tags=["Health"])
