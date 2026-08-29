@@ -266,6 +266,7 @@ const faqKeywords = {
 };
 
 let faqPanelOpen = false;
+let faqIsPending = false; // guard: prevent duplicate submissions
 
 export function initFaqChatbot() {
   const toggle = document.getElementById('faq-toggle');
@@ -296,19 +297,57 @@ export function initFaqChatbot() {
   });
 }
 
-function sendFaqMessage() {
+const BACKEND_URL = localStorage.getItem('jansahayak-backend-url') || 'http://localhost:8000';
+
+async function sendFaqMessage(overrideText) {
+  if (faqIsPending) return; // prevent duplicate submissions
+
   const input = document.getElementById('faq-text-input');
-  const text = input?.value?.trim();
+  const text = overrideText || input?.value?.trim();
   if (!text) return;
 
   addFaqUserMessage(text);
-  input.value = '';
+  if (!overrideText && input) input.value = '';
 
-  setTimeout(() => {
-    const answer = getFaqAnswer(text.toLowerCase());
-    addFaqBotMessage(answer);
+  faqIsPending = true;
+
+  // Show typing indicator inside existing faq-messages area
+  const container = document.getElementById('faq-messages');
+  const typingDiv = document.createElement('div');
+  typingDiv.className = 'faq-msg bot';
+  typingDiv.id = 'faq-typing-indicator';
+  typingDiv.innerHTML = `<div class="faq-bubble"><span aria-label="Loading">●●●</span></div>`;
+  if (container) {
+    container.appendChild(typingDiv);
+    container.scrollTop = container.scrollHeight;
+  }
+
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/llm/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [{ role: 'user', content: text }],
+        language: getLang()
+      })
+    });
+
+    document.getElementById('faq-typing-indicator')?.remove();
+
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    addFaqBotMessage(data.reply);
     renderFaqSuggestions();
-  }, 500);
+  } catch (error) {
+    document.getElementById('faq-typing-indicator')?.remove();
+    console.error('JanSahayak AI Error:', error);
+    const errMsg = getLang() === 'hi'
+      ? 'क्षमा करें, सर्वर से संपर्क नहीं हो पाया। कृपया पुनः प्रयास करें।'
+      : 'Sorry, the AI assistant is unavailable right now. Please try again.';
+    addFaqBotMessage(errMsg);
+  } finally {
+    faqIsPending = false;
+  }
 }
 
 function getFaqAnswer(query) {
@@ -350,13 +389,8 @@ function renderFaqSuggestions() {
     const btn = document.createElement('button');
     btn.className = 'faq-suggest';
     btn.textContent = s;
-    btn.addEventListener('click', () => {
-      addFaqUserMessage(s);
-      setTimeout(() => {
-        const answer = getFaqAnswer(s.toLowerCase());
-        addFaqBotMessage(answer);
-      }, 400);
-    });
+    // Route suggestion clicks through the real AI API
+    btn.addEventListener('click', () => sendFaqMessage(s));
     container.appendChild(btn);
   });
 }
