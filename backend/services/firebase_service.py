@@ -42,16 +42,16 @@ def init_firebase():
             sa_dict = json.loads(sa_json)
             cred = credentials.Certificate(sa_dict)
         else:
-            print("⚠️  Firebase credentials not configured. Running without Firestore.")
+            print("WARNING: Firebase credentials not configured. Running without Firestore.")
             return False
 
         firebase_admin.initialize_app(cred)
         _db = fs.client()
-        print("✅ Firebase Admin initialized")
+        print("Firebase Admin initialized")
         return True
 
     except Exception as e:
-        print(f"⚠️  Firebase init failed: {e}")
+        print(f"WARNING: Firebase init failed: {e}")
         return False
 
 

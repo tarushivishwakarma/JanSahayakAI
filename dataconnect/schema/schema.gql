@@ -1,0 +1,48 @@
+type User @table {
+  displayName: String!
+  email: String!
+  createdAt: Timestamp!
+  photoUrl: String
+  address: String
+  phone: String
+  userRole: String
+}
+
+type Service @table {
+  name: String!
+  description: String!
+  department: String!
+  createdAt: Timestamp!
+  eligibilityCriteria: String
+  requiredDocuments: String
+  applicationProcess: String
+}
+
+type Application @table {
+  user: User
+  service: Service
+  applicationDate: Date!
+  status: String!
+  createdAt: Timestamp!
+  updatedAt: Timestamp!
+  submissionDetails: String
+  officialNotes: String
+}
+
+type Document @table {
+  user: User
+  application: Application
+  documentName: String!
+  documentUrl: String!
+  uploadDate: Date!
+  documentType: String
+}
+
+type Notification @table {
+  user: User
+  message: String!
+  sentAt: Timestamp!
+  isRead: Boolean!
+  applicationId: UUID
+  type: String
+}

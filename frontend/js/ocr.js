@@ -14,6 +14,7 @@ export function initOcr() {
   const ocrFileInput = document.getElementById('ocr-file-input');
   const ocrReset = document.getElementById('ocr-reset-btn');
   const ocrAutoFill = document.getElementById('ocr-autofill-btn');
+  const ocrExplainBtn = document.getElementById('ocr-explain-btn');
 
   ocrClose?.addEventListener('click', closeOcrModal);
   document.getElementById('ocr-modal')?.addEventListener('click', (e) => {
@@ -57,9 +58,27 @@ export function initOcr() {
       });
     }
   });
+
+  // Explain Document button
+  ocrExplainBtn?.addEventListener('click', () => {
+    const extracted = getLastExtracted();
+    if (extracted) {
+      import('./chatbot.js').then(m => {
+        const msg = getLang() === 'en' 
+          ? "Please explain these extracted document fields."
+          : "कृपया इन निकाले गए दस्तावेज़ विवरणों को समझाएं।";
+        m.openFaqWithContext(msg, { document_context: extracted });
+        closeOcrModal();
+      });
+    }
+  });
 }
 
 let lastExtracted = null;
+
+function getLang() {
+  return document.documentElement.lang || 'en';
+}
 
 function getLastExtracted() {
   return lastExtracted;

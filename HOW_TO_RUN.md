@@ -3,6 +3,12 @@
 ## ✅ Correct Way to Open
 **Double-click `start.bat`** in the `JanSahayak` folder.
 
+Alternatively, if you have Node installed, run:
+
+```powershell
+npm start
+```
+
 This will:
 1. Start a local web server
 2. Automatically open http://localhost:8080 in your browser

@@ -276,8 +276,18 @@ function renderSchemeDetail(scheme) {
       <a href="${scheme.applyLink}" target="_blank" rel="noopener noreferrer" class="btn btn-primary" aria-label="Apply for ${escapeHtml(name)}">
         🚀 ${t('applyNow')}
       </a>
+      <button class="btn btn-outline" style="margin-left:0.5rem" id="ask-ai-scheme-btn" aria-label="Ask AI about ${escapeHtml(name)}">🤖 Ask AI</button>
     </div>
   `;
+
+  document.getElementById('ask-ai-scheme-btn')?.addEventListener('click', () => {
+    import('./chatbot.js').then(m => {
+      const msg = lang === 'en' 
+        ? `I have a question about the ${name} scheme.`
+        : `मुझे ${name} योजना के बारे में एक सवाल है।`;
+      m.openFaqWithContext(msg, { scheme_context: scheme });
+    });
+  });
 }
 
 function escapeHtml(str) {

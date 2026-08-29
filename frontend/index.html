@@ -466,6 +466,7 @@
             aria-label="Auto-fill form">✅ Auto-Fill Form</button>
           <button class="btn btn-outline" id="ocr-reset-btn" aria-label="Upload another document">🔄 Try Again</button>
         </div>
+        <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:0.75rem" id="ocr-explain-btn" aria-label="Explain Document with AI">🤖 Explain Document with AI</button>
       </div>
 
       <div id="ocr-loading" style="display:none;text-align:center;padding:1.5rem">
@@ -492,11 +493,13 @@
       <div class="faq-suggestions" id="faq-suggestions">
         <!-- Quick suggestions -->
       </div>
-      <div class="faq-input-row">
+      <div class="faq-input-row" style="position:relative;display:flex;align-items:center;">
         <input type="text" class="faq-input" id="faq-text-input" placeholder="Ask anything…"
           aria-label="Type your FAQ question" autocomplete="off" />
+        <button class="mic-btn" id="faq-mic-btn" aria-label="Voice input" title="Voice input" style="background:none;border:none;font-size:1.2rem;cursor:pointer;padding:0.5rem;transition:transform 0.2s;">🎤</button>
         <button class="faq-send" id="faq-send" aria-label="Send FAQ message">➤</button>
       </div>
+      <p id="faq-listening-text" class="listening-text" style="display:none;font-size:0.8rem;text-align:center;margin-top:0.5rem;color:var(--color-primary)">🎤 Listening…</p>
     </div>
   </div>
 

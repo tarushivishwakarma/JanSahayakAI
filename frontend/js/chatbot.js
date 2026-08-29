@@ -273,6 +273,7 @@ export function initFaqChatbot() {
   const faqPanel = document.getElementById('faq-panel');
   const faqSend = document.getElementById('faq-send');
   const faqInput = document.getElementById('faq-text-input');
+  const faqMicBtn = document.getElementById('faq-mic-btn');
 
   toggle?.addEventListener('click', () => {
     faqPanelOpen = !faqPanelOpen;
@@ -294,21 +295,115 @@ export function initFaqChatbot() {
   faqInput?.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') sendFaqMessage();
   });
+  faqMicBtn?.addEventListener('click', toggleFaqVoice);
 }
 
-function sendFaqMessage() {
+function toggleFaqVoice() {
+  const micBtn = document.getElementById('faq-mic-btn');
+  const listeningText = document.getElementById('faq-listening-text');
+
+  if (!isVoiceSupported()) {
+    alert(getLang() === 'en'
+      ? 'Voice input is not supported in your browser'
+      : 'आपके ब्राउज़र में आवाज़ इनपुट समर्थित नहीं है');
+    return;
+  }
+
+  if (getIsListening()) {
+    stopListening();
+    micBtn.classList.remove('listening');
+    listeningText.style.display = 'none';
+  } else {
+    const started = startListening(
+      (transcript) => {
+        document.getElementById('faq-text-input').value = transcript;
+        micBtn.classList.remove('listening');
+        listeningText.style.display = 'none';
+        sendFaqMessage(); // auto-send when voice is done
+      },
+      () => {
+        micBtn.classList.remove('listening');
+        listeningText.style.display = 'none';
+      }
+    );
+    if (started) {
+      micBtn.classList.add('listening');
+      listeningText.style.display = 'block';
+      listeningText.textContent = t('listeningText') || 'Listening...';
+    }
+  }
+}
+
+let faqChatHistory = [];
+
+async function sendFaqMessage(overrideText = null, customContext = null) {
   const input = document.getElementById('faq-text-input');
-  const text = input?.value?.trim();
+  let text = '';
+  if (typeof overrideText === 'string') {
+    text = overrideText;
+  } else {
+    text = input?.value?.trim();
+  }
   if (!text) return;
 
   addFaqUserMessage(text);
-  input.value = '';
+  if (input) input.value = '';
+  
+  faqChatHistory.push({ role: 'user', content: text });
 
-  setTimeout(() => {
+  // Show typing indicator
+  const container = document.getElementById('faq-messages');
+  const indicator = document.createElement('div');
+  indicator.className = 'faq-msg bot';
+  indicator.id = 'faq-typing-indicator';
+  indicator.innerHTML = '<div class="faq-bubble">Typing...</div>';
+  container.appendChild(indicator);
+  container.scrollTop = container.scrollHeight;
+
+  try {
+    const BACKEND_URL = localStorage.getItem('jansahayak-backend-url') || 'http://localhost:8000';
+    const payload = {
+      messages: faqChatHistory,
+      language: getLang() === 'hi' ? 'Hindi' : 'English',
+      user_context: userData // pass the existing profile if available
+    };
+    
+    if (customContext) {
+       Object.assign(payload, customContext);
+    }
+
+    const res = await fetch(`${BACKEND_URL}/api/llm/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) throw new Error('API Error');
+    const data = await res.json();
+    
+    document.getElementById('faq-typing-indicator')?.remove();
+    addFaqBotMessage(data.reply);
+    faqChatHistory.push({ role: 'assistant', content: data.reply });
+  } catch (err) {
+    console.error('LLM API Error:', err);
+    document.getElementById('faq-typing-indicator')?.remove();
+    // Fallback to keyword matching
     const answer = getFaqAnswer(text.toLowerCase());
     addFaqBotMessage(answer);
+    faqChatHistory.push({ role: 'assistant', content: answer });
+  }
+  
+  if (!customContext) {
     renderFaqSuggestions();
-  }, 500);
+  }
+}
+
+// Expose openFaqWithContext for OCR and Scheme Detail use cases
+export function openFaqWithContext(message, customContext) {
+  faqPanelOpen = true;
+  document.getElementById('faq-panel').classList.remove('hidden');
+  document.getElementById('faq-toggle').setAttribute('aria-expanded', 'true');
+  sendFaqMessage(message, customContext);
 }
 
 function getFaqAnswer(query) {
@@ -351,11 +446,7 @@ function renderFaqSuggestions() {
     btn.className = 'faq-suggest';
     btn.textContent = s;
     btn.addEventListener('click', () => {
-      addFaqUserMessage(s);
-      setTimeout(() => {
-        const answer = getFaqAnswer(s.toLowerCase());
-        addFaqBotMessage(answer);
-      }, 400);
+      sendFaqMessage(s);
     });
     container.appendChild(btn);
   });

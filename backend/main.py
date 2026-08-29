@@ -4,9 +4,15 @@ Main entry point — CORS enabled, modular routers
 Run: uvicorn main:app --reload
 """
 
+from dotenv import load_dotenv
+load_dotenv() # Load before importing modules
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import applications, ocr, admin
+from routers import applications, ocr, admin, llm
+from services.firebase_service import init_firebase
+
+
 
 app = FastAPI(
     title="JanSahayak API",
@@ -35,6 +41,12 @@ app.add_middleware(
 app.include_router(applications.router, prefix="/api", tags=["Applications"])
 app.include_router(ocr.router, prefix="/api", tags=["OCR"])
 app.include_router(admin.router, prefix="/api", tags=["Admin"])
+app.include_router(llm.router, prefix="/api/llm", tags=["LLM"])
+
+
+@app.on_event("startup")
+async def startup_event():
+    init_firebase()
 
 
 @app.get("/", tags=["Health"])
