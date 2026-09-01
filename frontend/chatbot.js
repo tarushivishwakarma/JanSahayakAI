@@ -297,7 +297,11 @@ export function initFaqChatbot() {
   });
 }
 
-const BACKEND_URL = localStorage.getItem('jansahayak-backend-url') || 'http://localhost:8000';
+const BACKEND_URL =
+  localStorage.getItem('jansahayak-backend-url') ||
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:8000'
+    : 'https://jansahayakai-ukbl.onrender.com');
 
 function showFaqTypingIndicator() {
   const container = document.getElementById('faq-messages');
