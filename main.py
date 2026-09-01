@@ -4,10 +4,12 @@ Main entry point — CORS enabled, modular routers
 Run: uvicorn main:app --reload
 """
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 import applications, ocr, admin
 from ai.router import router as llm_router
+import os
 
 app = FastAPI(
     title="JanSahayak API",
@@ -54,3 +56,12 @@ async def root():
 async def health():
     """Simple health check"""
     return {"status": "healthy"}
+
+
+@app.get("/api/schemes", tags=["Schemes"])
+async def get_schemes():
+    """Return the full schemes dataset (single source of truth — serves Firebase Hosting)"""
+    path = os.path.join(os.path.dirname(__file__), "schemes.json")
+    if not os.path.exists(path):
+        raise HTTPException(status_code=404, detail="schemes.json not found")
+    return FileResponse(path, media_type="application/json")

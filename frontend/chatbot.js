@@ -291,13 +291,28 @@ export function initFaqChatbot() {
     toggle.setAttribute('aria-expanded', 'false');
   });
 
-  faqSend?.addEventListener('click', sendFaqMessage);
+  faqSend?.addEventListener('click', () => sendFaqMessage());
   faqInput?.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') sendFaqMessage();
   });
 }
 
 const BACKEND_URL = localStorage.getItem('jansahayak-backend-url') || 'http://localhost:8000';
+
+function showFaqTypingIndicator() {
+  const container = document.getElementById('faq-messages');
+  if (!container || document.getElementById('faq-typing-indicator')) return;
+  const typingDiv = document.createElement('div');
+  typingDiv.className = 'faq-msg bot';
+  typingDiv.id = 'faq-typing-indicator';
+  typingDiv.innerHTML = `<div class="faq-bubble"><span aria-label="Loading">●●●</span></div>`;
+  container.appendChild(typingDiv);
+  container.scrollTop = container.scrollHeight;
+}
+
+function removeFaqTypingIndicator() {
+  document.getElementById('faq-typing-indicator')?.remove();
+}
 
 async function sendFaqMessage(overrideText) {
   if (faqIsPending) return; // prevent duplicate submissions
@@ -311,16 +326,21 @@ async function sendFaqMessage(overrideText) {
 
   faqIsPending = true;
 
-  // Show typing indicator inside existing faq-messages area
-  const container = document.getElementById('faq-messages');
-  const typingDiv = document.createElement('div');
-  typingDiv.className = 'faq-msg bot';
-  typingDiv.id = 'faq-typing-indicator';
-  typingDiv.innerHTML = `<div class="faq-bubble"><span aria-label="Loading">●●●</span></div>`;
-  if (container) {
-    container.appendChild(typingDiv);
-    container.scrollTop = container.scrollHeight;
+  // 1. Check local FAQ first
+  const localAnswer = getFaqAnswer(text);
+  if (localAnswer) {
+    showFaqTypingIndicator();
+    setTimeout(() => {
+      removeFaqTypingIndicator();
+      addFaqBotMessage(localAnswer);
+      renderFaqSuggestions();
+      faqIsPending = false;
+    }, 350);
+    return;
   }
+
+  // 2. Unknown question -> Fall back to AI backend
+  showFaqTypingIndicator();
 
   try {
     const response = await fetch(`${BACKEND_URL}/api/llm/chat`, {
@@ -332,19 +352,20 @@ async function sendFaqMessage(overrideText) {
       })
     });
 
-    document.getElementById('faq-typing-indicator')?.remove();
+    removeFaqTypingIndicator();
 
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
     addFaqBotMessage(data.reply);
     renderFaqSuggestions();
   } catch (error) {
-    document.getElementById('faq-typing-indicator')?.remove();
+    removeFaqTypingIndicator();
     console.error('JanSahayak AI Error:', error);
     const errMsg = getLang() === 'hi'
-      ? 'क्षमा करें, सर्वर से संपर्क नहीं हो पाया। कृपया पुनः प्रयास करें।'
-      : 'Sorry, the AI assistant is unavailable right now. Please try again.';
+      ? 'क्षमा करें, AI सहायक वर्तमान में अनुपलब्ध है। कृपया समर्थित सेवाओं (जैसे आधार, पैन, पेंशन, छात्रवृत्ति) के बारे में पूछें या सेवाएं डैशबोर्ड देखें।'
+      : 'Sorry, AI assistance is temporarily unavailable. Please try asking about supported services (like Aadhaar, PAN, Pension, Scholarship) or explore the Services dashboard.';
     addFaqBotMessage(errMsg);
+    renderFaqSuggestions();
   } finally {
     faqIsPending = false;
   }
@@ -352,12 +373,14 @@ async function sendFaqMessage(overrideText) {
 
 function getFaqAnswer(query) {
   const answers = t('faqAnswers');
+  if (!answers) return null;
+  const q = (query || '').toLowerCase().trim();
   for (const [topic, keywords] of Object.entries(faqKeywords)) {
-    if (keywords.some(kw => query.includes(kw))) {
-      return answers[topic] || answers.default;
+    if (keywords.some(kw => q.includes(kw.toLowerCase()))) {
+      return answers[topic] || null;
     }
   }
-  return answers.default;
+  return null;
 }
 
 function addFaqBotMessage(text) {
@@ -389,7 +412,6 @@ function renderFaqSuggestions() {
     const btn = document.createElement('button');
     btn.className = 'faq-suggest';
     btn.textContent = s;
-    // Route suggestion clicks through the real AI API
     btn.addEventListener('click', () => sendFaqMessage(s));
     container.appendChild(btn);
   });

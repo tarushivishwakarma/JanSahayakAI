@@ -3,3 +3,8 @@ __pycache__/
 *.pyc
 ai/__pycache__/
 .pytest_cache/
+.venv/
+.firebase/
+backend/.env
+backend/__pycache__/
+node_modules/

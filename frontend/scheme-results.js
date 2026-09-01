@@ -24,7 +24,8 @@ export function initSchemeResults({ onBack }) {
 
 async function loadSchemes() {
   try {
-    const res = await fetch('./data/schemes.json');
+    const backendUrl = localStorage.getItem('jansahayak-backend-url') || 'http://localhost:8000';
+    const res = await fetch(`${backendUrl}/api/schemes`);
     schemesData = await res.json();
   } catch (e) {
     console.error('Failed to load schemes:', e);
