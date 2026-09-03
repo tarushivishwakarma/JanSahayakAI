@@ -4,12 +4,16 @@ Main entry point — CORS enabled, modular routers
 Run: uvicorn main:app --reload
 """
 
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 import applications, ocr, admin
 from ai.router import router as llm_router
-import os
 
 app = FastAPI(
     title="JanSahayak API",

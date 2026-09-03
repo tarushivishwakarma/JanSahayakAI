@@ -759,7 +759,10 @@ ul { list-style: none; }
 .faq-input-row { display: flex; gap: 0.5rem; padding: 0.5rem; flex-shrink: 0; border-top: 1px solid var(--border); }
 .faq-input { flex: 1; background: var(--bg-card); border: 1px solid var(--border); border-radius: 999px; padding: 0.45rem 0.9rem; font-size: 0.85rem; color: var(--color-text); }
 .faq-input:focus { outline: none; border-color: var(--color-orange); }
+.faq-input:disabled { opacity: 0.6; cursor: not-allowed; }
 .faq-send { width: 32px; height: 32px; border-radius: 50%; background: var(--gradient-brand); border: none; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; }
+.faq-send:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+
 
 /* ---------- Accessibility Panel ---------- */
 #accessibility-panel {

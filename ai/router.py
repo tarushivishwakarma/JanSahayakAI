@@ -13,4 +13,5 @@ async def chat_endpoint(request: ChatRequest):
         reply = await generate_chat_response(request)
         return {"reply": reply}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Chat endpoint error: {type(e).__name__} - {e}")
+        raise HTTPException(status_code=500, detail="Failed to get response from AI service.")
