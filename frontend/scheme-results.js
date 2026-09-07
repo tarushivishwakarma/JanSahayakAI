@@ -35,27 +35,98 @@ async function loadSchemes() {
 }
 
 // ——— Render Results (called from app.js) ———
-export function renderResults(userData) {
+export async function renderResults(userData) {
   currentUserData = userData;
-  matchedSchemes = filterSchemes(userData);
+  // If schemes haven't loaded yet, load them
+  if (!schemesData || schemesData.length === 0) {
+    await loadSchemes();
+  }
 
+  // 1. Instant deterministic client-side evaluation
+  matchedSchemes = filterSchemes(userData);
   showResultsView();
   renderSchemeCards();
   updateResultsHeader();
+
+  // 2. Query authoritative backend evaluation endpoint
+  try {
+    const backendUrl = getBackendUrl();
+    const evalPayload = {
+      age: userData.age !== undefined && userData.age !== '' ? parseInt(userData.age, 10) : null,
+      income: userData.income !== undefined && userData.income !== '' ? parseFloat(userData.income) : null,
+      state: userData.state || null,
+      gender: userData.gender || null,
+      occupation: userData.occupation || null,
+      socialCategory: userData.category || userData.socialCategory || null,
+      disability: userData.disability || null,
+      maritalStatus: userData.maritalStatus || null,
+      ownsCultivableLand: userData.ownsCultivableLand === true || userData.ownsCultivableLand === 'true' || userData.ownsCultivableLand === 'yes' ? true : (userData.ownsCultivableLand === false || userData.ownsCultivableLand === 'false' || userData.ownsCultivableLand === 'no' ? false : null),
+      isInstitutionalLandholder: Boolean(userData.isInstitutionalLandholder),
+      isConstitutionalPostHolder: Boolean(userData.isConstitutionalPostHolder),
+      isGovernmentEmployee: Boolean(userData.isGovernmentEmployee),
+      monthlyPensionGte10k: Boolean(userData.monthlyPensionGte10k),
+      isIncomeTaxPayer: Boolean(userData.isIncomeTaxPayer),
+      isRegisteredProfessional: Boolean(userData.isRegisteredProfessional)
+    };
+
+    const res = await fetch(`${backendUrl}/api/schemes/evaluate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(evalPayload)
+    });
+
+    if (res.ok) {
+      const evalData = await res.json();
+      if (evalData && Array.isArray(evalData.results)) {
+        const resultMap = new Map(evalData.results.map(r => [r.scheme_id, r]));
+        // Filter schemesData based on authoritative status
+        const authoritativeMatched = [];
+        schemesData.forEach(scheme => {
+          const evalResult = resultMap.get(scheme.id);
+          if (evalResult && evalResult.status === 'ELIGIBLE') {
+            const enriched = { ...scheme, evaluationReasons: evalResult.reasons };
+            authoritativeMatched.push(enriched);
+          }
+        });
+        matchedSchemes = authoritativeMatched;
+        renderSchemeCards();
+        updateResultsHeader();
+      }
+    }
+  } catch (err) {
+    console.warn('Authoritative evaluation endpoint unreachable; using client deterministic rules:', err);
+  }
 }
 
-/** Identical matching logic from SchemeResults.tsx */
+/** Client-side deterministic matching logic mirroring core/eligibility.py */
 function filterSchemes(userData) {
   return schemesData.filter(scheme => {
+    // PM Kisan (Scheme 1): Requires farmer occupation and verified cultivable land ownership
+    if (scheme.id === 1) {
+      const isFarmer = userData.occupation === 'Farmer' || userData.occupation === 'किसान';
+      const ownsLand = (userData.ownsCultivableLand === true || userData.ownsCultivableLand === 'true' || userData.ownsCultivableLand === 'yes');
+      const hasExclusion = Boolean(
+        userData.isInstitutionalLandholder ||
+        userData.isConstitutionalPostHolder ||
+        userData.isGovernmentEmployee ||
+        userData.monthlyPensionGte10k ||
+        userData.isIncomeTaxPayer ||
+        userData.isRegisteredProfessional
+      );
+      if (!isFarmer || !ownsLand || hasExclusion) {
+        return false;
+      }
+    }
+
     const stateMatch = scheme.state === 'All' || scheme.state === userData.state;
     const incomeMatch = userData.income >= scheme.minIncome && userData.income <= scheme.maxIncome;
     const ageMatch = userData.age >= scheme.minAge && userData.age <= scheme.maxAge;
-    const categoryMatch = scheme.socialCategory.includes(userData.category);
+    const categoryMatch = scheme.socialCategory.includes(userData.category || userData.socialCategory);
     const occupationMatch = scheme.occupation.includes('All') || scheme.occupation.includes(userData.occupation);
     const genderMatch = scheme.gender === 'All' || scheme.gender === userData.gender;
     const disabilityMatch = scheme.disability === 'Any'
-      || (scheme.disability === 'Yes' && userData.disability === 'Yes')
-      || (scheme.disability === 'No' && userData.disability === 'No');
+      || (scheme.disability === 'Yes' && (userData.disability === 'Yes' || userData.disability === true))
+      || (scheme.disability === 'No' && (userData.disability === 'No' || userData.disability === false));
     const maritalMatch = !scheme.maritalStatus || scheme.maritalStatus === userData.maritalStatus;
 
     return stateMatch && incomeMatch && ageMatch && categoryMatch && occupationMatch && genderMatch && disabilityMatch && maritalMatch;
@@ -128,6 +199,9 @@ function createSchemeCard(scheme, lang) {
 }
 
 function getEligibilityReasons(scheme, lang) {
+  if (scheme.evaluationReasons && Array.isArray(scheme.evaluationReasons) && scheme.evaluationReasons.length > 0) {
+    return scheme.evaluationReasons;
+  }
   const u = currentUserData;
   if (!u) return [];
   const reasons = [];
@@ -136,9 +210,9 @@ function getEligibilityReasons(scheme, lang) {
     reasons.push(`Age: ${u.age} years`);
   if (u.income <= scheme.maxIncome)
     reasons.push(`Income: ₹${Number(u.income).toLocaleString('en-IN')}`);
-  if (scheme.socialCategory.includes(u.category))
-    reasons.push(`Category: ${u.category}`);
-  if (scheme.occupation.includes(u.occupation))
+  if (scheme.socialCategory && scheme.socialCategory.includes(u.category || u.socialCategory))
+    reasons.push(`Category: ${u.category || u.socialCategory}`);
+  if (scheme.occupation && scheme.occupation.includes(u.occupation))
     reasons.push(`Occupation: ${u.occupation}`);
   return reasons;
 }

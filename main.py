@@ -90,3 +90,21 @@ async def get_schemes():
     if not os.path.exists(path):
         raise HTTPException(status_code=404, detail="schemes.json not found")
     return FileResponse(path, media_type="application/json")
+
+
+from schemas import SchemeEvaluationProfile, SchemeEvaluationResponse
+from core.eligibility import evaluate_all_schemes
+
+
+@app.post("/api/schemes/evaluate", response_model=SchemeEvaluationResponse, tags=["Schemes"])
+async def evaluate_schemes(profile: SchemeEvaluationProfile):
+    """
+    Deterministically evaluates citizen profile against all 25 government schemes.
+    Returns tri-state status (ELIGIBLE, INELIGIBLE, UNKNOWN) with itemized reasons.
+    """
+    try:
+        return evaluate_all_schemes(profile)
+    except Exception as e:
+        logger.error("Scheme evaluation error: %s", type(e).__name__)
+        raise HTTPException(status_code=500, detail="Failed to evaluate scheme eligibility")
+
