@@ -5,6 +5,27 @@ Implements mathematically sound Tri-State logic:
 - ELIGIBLE: All mandatory criteria met and no exclusions.
 - INELIGIBLE: At least one hard requirement failed or exclusion triggered.
 - UNKNOWN: No disqualifications, but mandatory criteria cannot be verified due to missing profile information.
+
+Sentinel Strategy (Phase 3.5):
+  Several schemes have no official numeric age or income ceiling.
+  Where the official source says "no upper limit", schemes.json uses sentinels:
+    maxAge    = 120  → treated as "no upper age restriction"
+    maxIncome = 10,000,000 → treated as "no income ceiling"
+  The engine uses:
+    is_age_universal = (minAge <= 0 and maxAge >= 100)
+    is_income_universal = (maxIncome >= 5,000,000)
+  When universal, the engine does NOT demand the field as mandatory and
+  does NOT reject a citizen because of age/income alone.
+  This ensures sentinels never accidentally become a citizen-facing eligibility limit.
+
+Schemes using income sentinel 10,000,000 (no official ceiling):
+  id=1  PM Kisan         id=2  Ayushman Bharat
+  id=16 Atal Pension     id=21 Beti Bachao Beti Padhao
+  id=20 Sukanya Samriddhi (open to all income groups)
+
+Schemes using age sentinel 120 (no official upper limit):
+  id=9  MUDRA            id=14 Stand Up India
+  id=17 PM Vishwakarma  id=21 Beti Bachao Beti Padhao
 """
 
 import json
@@ -12,12 +33,28 @@ import os
 from typing import Dict, Any, List, Optional, Union
 from schemas import SchemeEvaluationProfile, SchemeEvaluationResult, SchemeEvaluationResponse
 
+# ── Sentinel constants ────────────────────────────────────────────────────────
+# When an official scheme has NO numeric upper bound, these sentinels are used
+# in schemes.json.  The engine treats them as "no upper limit" and does NOT
+# enforce them as hard eligibility requirements.
+SENTINEL_MAX_AGE: int = 120       # Any maxAge >= 100 is treated as "no upper age limit"
+SENTINEL_MAX_INCOME: int = 10_000_000  # Any maxIncome >= 5,000,000 treated as "no ceiling"
+
 # Cache loaded schemes
 _SCHEMES_CACHE: List[Dict[str, Any]] = []
 
 
 def load_schemes_data() -> List[Dict[str, Any]]:
-    """Loads and caches the 25 verified schemes from schemes.json."""
+    """
+    Loads and caches the 25 verified schemes from schemes.json.
+
+    Sentinel values in schemes.json:
+      maxAge    = 120        means "no official upper age restriction"
+      maxIncome = 10,000,000 means "no official numeric income ceiling"
+    These sentinels are interpreted by the engine via SENTINEL_MAX_AGE /
+    SENTINEL_MAX_INCOME thresholds and must NOT be surfaced as hard limits
+    to citizens.
+    """
     global _SCHEMES_CACHE
     if not _SCHEMES_CACHE:
         json_path = os.path.join(os.path.dirname(__file__), "..", "schemes.json")
@@ -138,18 +175,53 @@ def evaluate_pm_kisan(scheme: Dict[str, Any], data: Dict[str, Any]) -> SchemeEva
     )
 
 
+def evaluate_bbbp(scheme: Dict[str, Any], data: Dict[str, Any]) -> SchemeEvaluationResult:
+    """
+    Beti Bachao Beti Padhao (Scheme 21) is a national institutional awareness
+    campaign.  It does NOT disburse direct cash transfers or individual scheme
+    benefits to citizens.  The engine therefore returns UNKNOWN for any citizen
+    profile rather than ELIGIBLE or INELIGIBLE — the AI grounding layer will
+    then accurately explain the nature of the campaign to the citizen.
+    """
+    return SchemeEvaluationResult(
+        scheme_id=scheme["id"],
+        scheme_name=scheme["name"],
+        status="UNKNOWN",
+        reasons=[
+            "Beti Bachao Beti Padhao is a national awareness and institutional campaign, "
+            "not a direct cash-transfer or individual benefit scheme. "
+            "Eligibility cannot be determined in the same way as disbursement schemes. "
+            "For campaign information, visit wcd.nic.in."
+        ],
+        missing_fields=[],
+        category=scheme.get("category"),
+        benefit=scheme.get("benefit"),
+        benefitHi=scheme.get("benefitHi"),
+        applyLink=scheme.get("applyLink")
+    )
+
+
 def evaluate_scheme_eligibility(
     scheme: Dict[str, Any],
     profile: Union[SchemeEvaluationProfile, Dict[str, Any]]
 ) -> SchemeEvaluationResult:
     """
     Evaluates a single scheme against user profile using deterministic tri-state logic.
+
+    Sentinel awareness:
+      - maxAge >= 100   → age is treated as universal (no upper restriction)
+      - maxIncome >= 5,000,000 → income is treated as universal (no ceiling)
+    These sentinels must never produce a false INELIGIBLE result.
     """
     data = _normalize_profile(profile)
 
     # Special handling for PM-Kisan (Scheme 1)
     if scheme.get("id") == 1:
         return evaluate_pm_kisan(scheme, data)
+
+    # Special handling for BBBP (Scheme 21) — awareness campaign, not a disbursement scheme
+    if scheme.get("id") == 21:
+        return evaluate_bbbp(scheme, data)
 
     reasons: List[str] = []
     missing_fields: List[str] = []
@@ -180,8 +252,11 @@ def evaluate_scheme_eligibility(
             reasons.append(f"Gender matches: {scheme_gender}.")
 
     # 3. Age check
+    # Sentinel: maxAge >= 100 means no official upper age restriction.
+    # In that case the engine does not demand age as a mandatory field
+    # and will not reject a citizen purely because of their age.
     min_age = scheme.get("minAge", 0)
-    max_age = scheme.get("maxAge", 120)
+    max_age = scheme.get("maxAge", SENTINEL_MAX_AGE)
     is_age_universal = (min_age <= 0 and max_age >= 100)
     user_age = data.get("age")
 
@@ -191,7 +266,10 @@ def evaluate_scheme_eligibility(
             if age_int < min_age or age_int > max_age:
                 ineligible_reasons.append(f"Age {age_int} is outside eligible range ({min_age}–{max_age} years).")
             else:
-                reasons.append(f"Age {age_int} is within required range ({min_age}–{max_age} years).")
+                if is_age_universal and min_age <= 0:
+                    reasons.append(f"Age {age_int} — no official upper age restriction for this scheme.")
+                else:
+                    reasons.append(f"Age {age_int} is within required range ({min_age}–{max_age} years).")
         except (ValueError, TypeError):
             missing_fields.append("age")
     else:
@@ -199,15 +277,20 @@ def evaluate_scheme_eligibility(
             missing_fields.append("age")
 
     # 4. Income check
-    max_income = scheme.get("maxIncome", 10000000)
-    is_income_universal = (max_income >= 5000000)
+    # Sentinel: maxIncome >= 5,000,000 means no official numeric income ceiling.
+    # In that case the engine does not demand income as a mandatory field
+    # and will not reject a citizen purely because of their income level.
+    max_income = scheme.get("maxIncome", SENTINEL_MAX_INCOME)
+    is_income_universal = (max_income >= 5_000_000)
     user_income = data.get("income")
 
     if user_income is not None:
         try:
             income_float = float(user_income)
-            if income_float > max_income:
+            if income_float > max_income and not is_income_universal:
                 ineligible_reasons.append(f"Income ₹{income_float:,.0f} exceeds maximum ceiling of ₹{max_income:,.0f}.")
+            elif is_income_universal:
+                reasons.append(f"Income ₹{income_float:,.0f} — no official numeric income ceiling for this scheme.")
             else:
                 reasons.append(f"Income ₹{income_float:,.0f} is within ceiling of ₹{max_income:,.0f}.")
         except (ValueError, TypeError):
