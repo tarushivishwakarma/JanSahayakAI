@@ -4,6 +4,7 @@
  */
 
 import { t, getLang } from './i18n.js';
+import { getBackendUrl, escapeHtml, sanitizeUrl } from './utils.js';
 
 let schemesData = [];
 let currentUserData = null;
@@ -24,11 +25,7 @@ export function initSchemeResults({ onBack }) {
 
 async function loadSchemes() {
   try {
-    const backendUrl =
-      localStorage.getItem('jansahayak-backend-url') ||
-      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-        ? 'http://localhost:8000'
-        : 'https://jansahayakai-ukbl.onrender.com');
+    const backendUrl = getBackendUrl();
     const res = await fetch(`${backendUrl}/api/schemes`);
     schemesData = await res.json();
   } catch (e) {
@@ -120,7 +117,7 @@ function createSchemeCard(scheme, lang) {
     </div>
     <div class="scheme-actions">
       <button class="btn btn-primary btn-sm" data-scheme-id="${scheme.id}" aria-label="Know more about ${escapeHtml(name)}">${t('knowMore')}</button>
-      <a href="${scheme.applyLink}" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm" aria-label="Apply for ${escapeHtml(name)}">
+      <a href="${sanitizeUrl(scheme.applyLink)}" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm" aria-label="Apply for ${escapeHtml(name)}">
         🔗 ${t('applyNow')}
       </a>
     </div>
@@ -278,17 +275,9 @@ function renderSchemeDetail(scheme) {
     <!-- Official Link -->
     <div>
       <h3 style="margin-bottom:0.75rem">🔗 ${t('officialLink')}</h3>
-      <a href="${scheme.applyLink}" target="_blank" rel="noopener noreferrer" class="btn btn-primary" aria-label="Apply for ${escapeHtml(name)}">
+      <a href="${sanitizeUrl(scheme.applyLink)}" target="_blank" rel="noopener noreferrer" class="btn btn-primary" aria-label="Apply for ${escapeHtml(name)}">
         🚀 ${t('applyNow')}
       </a>
     </div>
   `;
-}
-
-function escapeHtml(str) {
-  return String(str || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
 }
