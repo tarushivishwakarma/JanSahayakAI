@@ -1,12 +1,15 @@
 """
-OCR Service — Extract text from Aadhaar / PAN card images using Tesseract
-Falls back to basic PIL analysis if Tesseract is not installed.
+OCR Service — Extract text from Aadhaar / PAN card images using Tesseract.
+No synthetic demo identity data is returned upon failure.
 """
 
 import os
 import re
 import io
+import logging
 from typing import Dict, Optional
+
+logger = logging.getLogger("jansahayak.ocr")
 
 # Try importing OCR libraries (graceful degradation)
 try:
@@ -14,7 +17,7 @@ try:
     PIL_AVAILABLE = True
 except ImportError:
     PIL_AVAILABLE = False
-    print("⚠️  Pillow not installed. Install: pip install Pillow")
+    logger.warning("Pillow not installed. Install: pip install Pillow")
 
 try:
     import pytesseract
@@ -25,21 +28,34 @@ try:
     TESSERACT_AVAILABLE = True
 except ImportError:
     TESSERACT_AVAILABLE = False
-    print("⚠️  pytesseract not installed. Install: pip install pytesseract")
+    logger.warning("pytesseract not installed. Install: pip install pytesseract")
+
+
+def _empty_extraction() -> Dict[str, Optional[str]]:
+    """Returns an empty extraction dictionary without fabricating values."""
+    return {
+        "name": None,
+        "dob": None,
+        "address": None,
+        "idNumber": None,
+        "gender": None,
+        "fatherName": None
+    }
 
 
 def extract_text_from_image(file_bytes: bytes, filename: str = "") -> Dict[str, Optional[str]]:
     """
     Extract structured information from an ID card image.
-    
-    Returns dict with keys: name, dob, address, idNumber, gender, fatherName
+    Returns dict with keys: name, dob, address, idNumber, gender, fatherName.
+    Returns empty values if processing fails or OCR is unavailable.
     """
     if not PIL_AVAILABLE:
-        return _demo_extraction()
+        logger.warning("OCR skipped: Pillow is not available.")
+        return _empty_extraction()
 
     try:
         image = Image.open(io.BytesIO(file_bytes))
-        # Convert to RGB if needed (handles PNG with alpha, etc.)
+        # Convert to RGB if needed (handles PNG with alpha, grayscale, etc.)
         if image.mode not in ('RGB', 'L'):
             image = image.convert('RGB')
 
@@ -49,12 +65,12 @@ def extract_text_from_image(file_bytes: bytes, filename: str = "") -> Dict[str, 
         if TESSERACT_AVAILABLE:
             return _tesseract_extract(image)
         else:
-            # Basic regex on raw bytes (very limited)
-            return _demo_extraction()
+            logger.warning("OCR skipped: Tesseract is not available in the current environment.")
+            return _empty_extraction()
 
     except Exception as e:
-        print(f"OCR error: {e}")
-        return _demo_extraction()
+        logger.error("OCR image processing error: %s", type(e).__name__)
+        return _empty_extraction()
 
 
 def _preprocess_image(image):
@@ -70,7 +86,7 @@ def _preprocess_image(image):
 
     # Scale up if small
     w, h = image.size
-    if w < 800:
+    if w < 800 and w > 0:
         scale = 800 / w
         image = image.resize((int(w * scale), int(h * scale)), Image.LANCZOS)
 
@@ -80,7 +96,6 @@ def _preprocess_image(image):
 def _tesseract_extract(image) -> Dict[str, Optional[str]]:
     """Use Tesseract to extract text and parse fields"""
     try:
-        # Run OCR with Hindi+English language support
         custom_config = r'--oem 3 --psm 6'
         try:
             raw_text = pytesseract.image_to_string(image, lang='hin+eng', config=custom_config)
@@ -90,20 +105,15 @@ def _tesseract_extract(image) -> Dict[str, Optional[str]]:
         return _parse_id_card_text(raw_text)
 
     except Exception as e:
-        print(f"Tesseract error: {e}")
-        return _demo_extraction()
+        logger.error("Tesseract execution error: %s", type(e).__name__)
+        return _empty_extraction()
 
 
 def _parse_id_card_text(text: str) -> Dict[str, Optional[str]]:
     """Parse extracted OCR text to find structured fields"""
-    extracted = {
-        "name": None,
-        "dob": None,
-        "address": None,
-        "idNumber": None,
-        "gender": None,
-        "fatherName": None
-    }
+    extracted = _empty_extraction()
+    if not text:
+        return extracted
 
     lines = [l.strip() for l in text.split('\n') if l.strip()]
 
@@ -163,18 +173,3 @@ def _parse_id_card_text(text: str) -> Dict[str, Optional[str]]:
             extracted["address"] = addr_clean
 
     return extracted
-
-
-def _demo_extraction() -> Dict[str, Optional[str]]:
-    """
-    Demo data returned when Tesseract/PIL is not available.
-    In production, this should never be returned.
-    """
-    return {
-        "name": "Ramesh Kumar Singh",
-        "dob": "15/08/1995",
-        "address": "Village Rampur, District Gorakhpur, Uttar Pradesh - 273001",
-        "idNumber": "1234 5678 9012",
-        "gender": "Male",
-        "fatherName": "Suresh Kumar Singh"
-    }

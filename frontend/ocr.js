@@ -5,12 +5,7 @@
  */
 import { t } from './i18n.js';
 import { showToast } from './app.js';
-
-const BACKEND_URL =
-  localStorage.getItem('jansahayak-backend-url') ||
-  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? 'http://localhost:8000'
-    : 'https://jansahayakai-ukbl.onrender.com');
+import { getBackendUrl, escapeHtml, authFetch } from './utils.js';
 
 export function initOcr() {
   const ocrClose = document.getElementById('ocr-modal-close');
@@ -76,6 +71,13 @@ async function handleFile(file) {
     return;
   }
 
+  // Validate allowed image types (JPEG, PNG, WebP)
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+  if (!allowedTypes.includes(file.type) && !/\.(jpe?g|png|webp)$/i.test(file.name)) {
+    showToast('Unsupported file type. Please upload a JPG, PNG, or WebP image.', 'error');
+    return;
+  }
+
   // Show preview
   if (file.type.startsWith('image/')) {
     const reader = new FileReader();
@@ -97,28 +99,55 @@ async function handleFile(file) {
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await fetch(`${BACKEND_URL}/api/ocr/extract`, {
+    const response = await authFetch(`${getBackendUrl()}/api/ocr/extract`, {
       method: 'POST',
       body: formData
     });
 
     if (!response.ok) {
-      throw new Error(`Server error: ${response.status}`);
+      const errJson = await response.json().catch(() => null);
+      throw new Error(errJson?.detail || `Server error: ${response.status}`);
     }
 
     const data = await response.json();
-    lastExtracted = data.extracted;
-    showOcrResult(data.extracted);
+    if (data.success && data.extracted && Object.values(data.extracted).some(v => v !== null && v !== '')) {
+      lastExtracted = data.extracted;
+      showOcrResult(data.extracted);
+    } else {
+      lastExtracted = null;
+      showToast(
+        data.message || 'Document text could not be clearly recognized. Please enter your details manually.',
+        'warning'
+      );
+      showOcrFallbackNotice();
+    }
 
   } catch (err) {
-    console.warn('OCR backend unavailable, using demo extraction:', err);
-    // Demo fallback when backend is not running
-    const demoData = getDemoExtraction(file.name);
-    lastExtracted = demoData;
-    showOcrResult(demoData);
+    console.warn('OCR extraction failed:', err);
+    lastExtracted = null;
+    showToast('Could not extract text from document. Please fill details manually.', 'warning');
+    showOcrFallbackNotice();
   } finally {
     showOcrLoading(false);
   }
+}
+
+function showOcrFallbackNotice() {
+  const resultDiv = document.getElementById('ocr-result');
+  const fieldsList = document.getElementById('ocr-fields-list');
+  if (!resultDiv || !fieldsList) return;
+
+  fieldsList.innerHTML = `
+    <div style="padding: 1rem; text-align: center; color: var(--color-text-muted);">
+      <p style="margin-bottom: 0.75rem;">⚠️ No clear text could be automatically extracted from this document.</p>
+      <p style="font-size: 0.85rem; margin-bottom: 1rem;">Please close this window and enter your application details manually.</p>
+      <button class="btn btn-primary btn-sm" id="ocr-manual-entry-btn">Enter Details Manually</button>
+    </div>
+  `;
+  document.getElementById('ocr-manual-entry-btn')?.addEventListener('click', () => {
+    closeOcrModal();
+  });
+  resultDiv.style.display = 'block';
 }
 
 function showOcrResult(extracted) {
@@ -174,20 +203,4 @@ function resetOcr() {
 function closeOcrModal() {
   document.getElementById('ocr-modal').classList.add('hidden');
   resetOcr();
-}
-
-/** Demo extraction when backend is not available */
-function getDemoExtraction(filename) {
-  return {
-    name: 'Ramesh Kumar Singh',
-    dob: '15/08/1995',
-    address: 'Village Rampur, District Gorakhpur, UP - 273001',
-    idNumber: '1234 5678 9012',
-    gender: 'Male',
-    fatherName: 'Suresh Kumar Singh'
-  };
-}
-
-function escapeHtml(str) {
-  return String(str || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }

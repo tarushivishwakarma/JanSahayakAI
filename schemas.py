@@ -40,9 +40,10 @@ class StatusUpdate(BaseModel):
 class OcrResponse(BaseModel):
     """Schema for OCR extraction response"""
     success: bool
-    extracted: Dict[str, Optional[str]]
+    extracted: Optional[Dict[str, Optional[str]]] = None
     confidence: Optional[float] = None
     raw_text: Optional[str] = None
+    message: Optional[str] = None
 
 
 class AnalyticsResponse(BaseModel):
