@@ -21,7 +21,25 @@ if not firebase_admin._apps:
 from main import app
 from core.security import sanitize_url, llm_rate_limiter, get_current_user, get_current_admin_user
 from ai.service import mask_pii_text, sanitize_context
-from applications import _in_memory_store
+
+mock_firestore_store = {}
+
+def mock_create_app(doc_data):
+    doc_id = doc_data.get("id") or doc_data.get("applicationId") or "MOCK-APP-ID"
+    mock_firestore_store[doc_id] = dict(doc_data)
+    return doc_id
+
+def mock_get_app(app_id):
+    return mock_firestore_store.get(app_id)
+
+def mock_get_user_apps(uid):
+    return [a for a in mock_firestore_store.values() if a.get("userId") == uid]
+
+def mock_update_status(app_id, status):
+    if app_id in mock_firestore_store:
+        mock_firestore_store[app_id]["status"] = status
+        return True
+    return False
 
 
 def mock_verify_token(token: str):
@@ -50,7 +68,7 @@ def mock_verify_token(token: str):
     elif token == "admin_email_only_token":
         return {
             "uid": "admin_uid_888",
-            "email": "admin@test.com",
+            "email": "authorized_admin@jansahayak.gov.in",
             "name": "Email Admin",
             "admin": False  # Admin via ADMIN_EMAILS configuration
         }
@@ -65,8 +83,22 @@ class SecurityRegressionTestCase(unittest.TestCase):
         cls.client = TestClient(app)
 
     def setUp(self):
-        _in_memory_store.clear()
+        mock_firestore_store.clear()
         llm_rate_limiter._requests.clear()
+        self.patch_fb_create = patch("firebase_service.create_application", side_effect=mock_create_app)
+        self.patch_fb_get = patch("firebase_service.get_application_by_id", side_effect=mock_get_app)
+        self.patch_fb_user = patch("firebase_service.get_user_applications", side_effect=mock_get_user_apps)
+        self.patch_fb_update = patch("firebase_service.update_application_status", side_effect=mock_update_status)
+        self.patch_fb_create.start()
+        self.patch_fb_get.start()
+        self.patch_fb_user.start()
+        self.patch_fb_update.start()
+
+    def tearDown(self):
+        self.patch_fb_create.stop()
+        self.patch_fb_get.stop()
+        self.patch_fb_user.stop()
+        self.patch_fb_update.stop()
 
     # -------------------------------------------------------------
     # 1. Missing Authorization header -> 401
@@ -119,8 +151,7 @@ class SecurityRegressionTestCase(unittest.TestCase):
     # 5. POST application cannot spoof userId
     # -------------------------------------------------------------
     @patch("firebase_admin.auth.verify_id_token", side_effect=mock_verify_token)
-    @patch("firebase_service.create_application", side_effect=Exception("Use in-memory"))
-    def test_05_post_application_cannot_spoof_user_id(self, mock_fb, mock_auth):
+    def test_05_post_application_cannot_spoof_user_id(self, mock_auth):
         headers = {"Authorization": "Bearer valid_citizen_token"}
         # Attacker tries to submit application on behalf of victim "victim_user_999"
         malicious_payload = {
@@ -133,9 +164,9 @@ class SecurityRegressionTestCase(unittest.TestCase):
         resp = self.client.post("/api/applications", json=malicious_payload, headers=headers)
         self.assertEqual(resp.status_code, 200)
 
-        # Inspect saved record in in-memory store
+        # Inspect saved record in authoritative store
         doc_id = resp.json()["id"]
-        saved_app = _in_memory_store[doc_id]
+        saved_app = mock_firestore_store[doc_id]
         # Must be authoritative UID of authenticated user, NOT victim_user_999
         self.assertEqual(saved_app["userId"], "citizen_uid_101")
         self.assertNotEqual(saved_app["userId"], "victim_user_999")
@@ -147,7 +178,7 @@ class SecurityRegressionTestCase(unittest.TestCase):
     def test_06_application_get_prevents_idor_bola(self, mock_auth):
         # Create an application owned by User B
         app_id = "APP-CONFIDENTIAL-01"
-        _in_memory_store[app_id] = {
+        mock_firestore_store[app_id] = {
             "id": app_id,
             "applicationId": app_id,
             "userId": "citizen_uid_202",
@@ -184,7 +215,7 @@ class SecurityRegressionTestCase(unittest.TestCase):
     @patch("firebase_admin.auth.verify_id_token", side_effect=mock_verify_token)
     def test_08_non_admin_cannot_change_application_status(self, mock_auth):
         app_id = "APP-TEST-01"
-        _in_memory_store[app_id] = {
+        mock_firestore_store[app_id] = {
             "id": app_id,
             "applicationId": app_id,
             "userId": "citizen_uid_101",
@@ -203,10 +234,9 @@ class SecurityRegressionTestCase(unittest.TestCase):
     # 9. Admin can change application status
     # -------------------------------------------------------------
     @patch("firebase_admin.auth.verify_id_token", side_effect=mock_verify_token)
-    @patch("firebase_service.update_application_status", side_effect=Exception("Fallback in-memory"))
-    def test_09_admin_can_change_application_status(self, mock_fb, mock_auth):
+    def test_09_admin_can_change_application_status(self, mock_auth):
         app_id = "APP-TEST-02"
-        _in_memory_store[app_id] = {
+        mock_firestore_store[app_id] = {
             "id": app_id,
             "applicationId": app_id,
             "userId": "citizen_uid_101",
@@ -220,7 +250,7 @@ class SecurityRegressionTestCase(unittest.TestCase):
         )
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.json()["status"], "approved")
-        self.assertEqual(_in_memory_store[app_id]["status"], "approved")
+        self.assertEqual(mock_firestore_store[app_id]["status"], "approved")
 
     # -------------------------------------------------------------
     # 10. Admin endpoints reject unauthenticated requests
