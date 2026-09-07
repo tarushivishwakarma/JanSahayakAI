@@ -5,6 +5,8 @@ from typing import Any, Dict, List
 import httpx
 from .config import LLM_API_KEY, LLM_MODEL, LLM_BASE_URL
 from .schemas import ChatRequest
+from core.eligibility import evaluate_all_schemes
+from core.ai_validator import validate_ai_response
 
 # Load schemes data once to keep in memory for reference
 SCHEMES_DATA = []
@@ -265,10 +267,26 @@ async def generate_chat_response(request: ChatRequest) -> str:
         safe_doc_ctx = sanitize_context(request.document_context)
         system_prompt += f"DOCUMENT CONTEXT (Extracted fields from user document):\n{json.dumps(safe_doc_ctx, ensure_ascii=False)}\n\n"
 
-    # 3. User profile context (if available) - PII sanitized
+    # 3. User profile context (if available) - PII sanitized & Deterministically Evaluated
     if request.user_context:
         safe_user_ctx = sanitize_context(request.user_context)
         system_prompt += f"USER PROFILE CONTEXT:\n{json.dumps(safe_user_ctx, ensure_ascii=False)}\n\n"
+        try:
+            eval_res = evaluate_all_schemes(request.user_context)
+            eligible_lines = [f"- {r.scheme_name}: {'; '.join(r.reasons[:2])}" for r in eval_res.results if r.status == "ELIGIBLE"]
+            ineligible_lines = [f"- {r.scheme_name} (INELIGIBLE): {'; '.join(r.reasons[:2])}" for r in eval_res.results if r.status == "INELIGIBLE"]
+            unknown_lines = [f"- {r.scheme_name} (UNKNOWN: Missing {', '.join(r.missing_fields)})" for r in eval_res.results if r.status == "UNKNOWN"]
+            system_prompt += (
+                "VERIFIED DETERMINISTIC ELIGIBILITY RESULTS (GROUND TRUTH):\n"
+                f"Eligible Schemes ({len(eligible_lines)}):\n" + ("\n".join(eligible_lines) if eligible_lines else "None") + "\n\n"
+                f"Ineligible Schemes ({len(ineligible_lines)}):\n" + ("\n".join(ineligible_lines) if ineligible_lines else "None") + "\n\n"
+                f"Unknown Status ({len(unknown_lines)}):\n" + ("\n".join(unknown_lines[:5]) if unknown_lines else "None") + "\n\n"
+                "STRICT GROUNDING DIRECTIVE: Never state or imply that the user qualifies for any scheme listed as INELIGIBLE. "
+                "For schemes with UNKNOWN status (such as PM-Kisan without verified landholding), clearly explain the requirement "
+                "and ask for the missing criteria before stating eligibility.\n\n"
+            )
+        except Exception as e:
+            print(f"Warning: Could not pre-evaluate scheme eligibility for AI prompt: {e}\n\n")
 
     # 4. Compact Verified Schemes Catalog
     catalog_lines = "\n".join([_format_compact_scheme(s) for s in SCHEMES_DATA])
@@ -308,20 +326,22 @@ async def generate_chat_response(request: ChatRequest) -> str:
                     data = response.json()
 
                     # Robust response extraction
+                    raw_content = ""
                     if "choices" in data and len(data["choices"]) > 0:
                         choice = data["choices"][0]
                         message = choice.get("message", {})
-                        content = message.get("content", "")
-                        if content and content.strip():
-                            return content.strip()
-
-                    # Handle non-OpenAI or Gemini raw format if returned
-                    if "candidates" in data and len(data["candidates"]) > 0:
+                        raw_content = message.get("content", "")
+                    elif "candidates" in data and len(data["candidates"]) > 0:
                         candidate = data["candidates"][0]
                         parts = candidate.get("content", {}).get("parts", [])
                         text_parts = [p.get("text", "") for p in parts if p.get("text")]
                         if text_parts:
-                            return "".join(text_parts).strip()
+                            raw_content = "".join(text_parts)
+
+                    if raw_content and raw_content.strip():
+                        # Run through hallucination and ground truth validator
+                        validated = validate_ai_response(raw_content.strip(), request.user_context)
+                        return validated["sanitized_text"]
 
                     raise ValueError("Empty or unexpected response structure from AI provider.")
                 except (httpx.RemoteProtocolError, httpx.ConnectError, httpx.TimeoutException) as e:
