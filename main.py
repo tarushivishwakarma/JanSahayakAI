@@ -5,6 +5,8 @@ Run: uvicorn main:app --reload
 """
 
 import os
+import logging
+from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -14,28 +16,47 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 import applications, ocr, admin
 from ai.router import router as llm_router
+import firebase_service
+
+logger = logging.getLogger("jansahayak.api")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Safely initialize services on startup."""
+    try:
+        firebase_service.init_firebase()
+    except Exception as e:
+        logger.error("Startup Firebase initialization error: %s", e)
+    yield
+
 
 app = FastAPI(
     title="JanSahayak API",
     description="Backend API for JanSahayak – Government Scheme Finder",
     version="1.0.0",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
+    lifespan=lifespan
 )
 
-# ——— CORS — allow frontend origins ———
+# ——— CORS — environment-driven origins (no wildcard '*') ———
+raw_origins = os.getenv(
+    "ALLOWED_ORIGINS",
+    "https://jansahayakai.web.app,https://jansahayakai.firebaseapp.com,http://localhost:5500,http://127.0.0.1:5500,http://localhost:3000,http://localhost:8080,http://127.0.0.1:8080"
+)
+allowed_origins = [
+    origin.strip()
+    for origin in raw_origins.split(",")
+    if origin.strip() and origin.strip() != "*"
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5500",      # Live Server (VS Code)
-        "http://127.0.0.1:5500",
-        "http://localhost:3000",
-        "https://jansahayak.vercel.app",  # Vercel deployment
-        "*"  # Remove in production and list exact origins
-    ],
+    allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PATCH", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"],
 )
 
 # ——— Include routers ———
