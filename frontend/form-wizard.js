@@ -5,6 +5,7 @@
 import { t, getLang } from './i18n.js';
 import { showToast } from './app.js';
 import { getCurrentUser } from './auth.js';
+import { getBackendUrl, escapeHtml, authFetch } from './utils.js';
 
 let currentServiceId = null;
 let currentStepIndex = 0;
@@ -226,15 +227,15 @@ async function submitForm() {
   };
 
   try {
-    // Try to save to backend API
+    // Save to backend API using authenticated fetch
     const backendUrl = getBackendUrl();
-    const resp = await fetch(`${backendUrl}/api/applications`, {
+    const resp = await authFetch(`${backendUrl}/api/applications`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(applicationData)
     });
 
-    if (!resp.ok) throw new Error('Backend error');
+    if (!resp.ok) throw new Error('Backend error ' + resp.status);
     const result = await resp.json();
     applicationData.applicationId = result.application_id || applicationData.applicationId;
 
@@ -299,19 +300,3 @@ export function autoFillFromOcr(ocrData) {
   renderStep();
 }
 
-function getBackendUrl() {
-  return (
-    localStorage.getItem('jansahayak-backend-url') ||
-    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-      ? 'http://localhost:8000'
-      : 'https://jansahayakai-ukbl.onrender.com')
-  );
-}
-
-function escapeHtml(str) {
-  return String(str || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}

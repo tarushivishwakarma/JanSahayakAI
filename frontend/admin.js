@@ -6,12 +6,8 @@
 import { t } from './i18n.js';
 import { getCurrentUser } from './auth.js';
 import { showToast } from './app.js';
+import { getBackendUrl, formatDate, escapeHtml, authFetch } from './utils.js';
 
-const BACKEND_URL =
-  localStorage.getItem('jansahayak-backend-url') ||
-  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? 'http://localhost:8000'
-    : 'https://jansahayakai-ukbl.onrender.com');
 const ADMIN_EMAILS = ['admin@jansahayak.in', 'admin@test.com'];
 
 export async function initAdmin() {
@@ -39,11 +35,11 @@ export async function initAdmin() {
   let applications = [];
 
   try {
-    const resp = await fetch(`${BACKEND_URL}/api/admin/applications`);
+    const resp = await authFetch(`${getBackendUrl()}/api/admin/applications`);
     if (resp.ok) {
       const data = await resp.json();
       applications = data.applications || [];
-    } else throw new Error('Backend unavailable');
+    } else throw new Error(`Backend error status: ${resp.status}`);
   } catch {
     // Try Firestore
     if (window.firebaseReady && window.db) {
@@ -162,12 +158,12 @@ function createTableRow(app) {
 
 async function updateApplicationStatus(appId, newStatus, app) {
   try {
-    const resp = await fetch(`${BACKEND_URL}/api/applications/${appId}/status`, {
+    const resp = await authFetch(`${getBackendUrl()}/api/applications/${appId}/status`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: newStatus })
     });
-    if (!resp.ok) throw new Error('Backend error');
+    if (!resp.ok) throw new Error(`Backend error: ${resp.status}`);
     showToast(`Status updated to: ${newStatus}`, 'success');
   } catch {
     // Firestore fallback
@@ -206,16 +202,4 @@ function getDemoApplications() {
     { id: 'demo-4', applicationId: 'APP-1748000004', userEmail: 'user4@example.com', userId: 'user4', serviceName: 'Income Certificate', status: 'rejected', submittedAt: new Date(Date.now() - 345600000).toISOString() },
     { id: 'demo-5', applicationId: 'APP-1748000005', userEmail: 'user5@example.com', userId: 'user5', serviceName: 'Ration Card', status: 'reviewing', submittedAt: new Date(Date.now() - 432000000).toISOString() }
   ];
-}
-
-function formatDate(dateStr) {
-  if (!dateStr) return '—';
-  try {
-    const d = new Date(dateStr.seconds ? dateStr.seconds * 1000 : dateStr);
-    return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-  } catch { return '—'; }
-}
-
-function escapeHtml(str) {
-  return String(str || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }

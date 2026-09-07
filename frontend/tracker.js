@@ -6,12 +6,7 @@
 import { t, getLang } from './i18n.js';
 import { getCurrentUser } from './auth.js';
 import { showToast } from './app.js';
-
-const BACKEND_URL =
-  localStorage.getItem('jansahayak-backend-url') ||
-  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? 'http://localhost:8000'
-    : 'https://jansahayakai-ukbl.onrender.com');
+import { getBackendUrl, formatDate, escapeHtml, authFetch } from './utils.js';
 
 export async function initTracker() {
   const user = getCurrentUser();
@@ -36,15 +31,16 @@ export async function initTracker() {
   let applications = [];
 
   try {
-    // Try backend API first
-    const resp = await fetch(`${BACKEND_URL}/api/applications/user/${user.uid}`, {
-      headers: { 'X-User-ID': user.uid }
-    });
+    // Try backend API first with verified authentication
+    const backendUrl = getBackendUrl();
+    const resp = await authFetch(`${backendUrl}/api/applications/user/${user.uid}`);
     if (resp.ok) {
       const data = await resp.json();
       applications = data.applications || [];
-    } else throw new Error('Backend unavailable');
-  } catch {
+    } else {
+      throw new Error(`Backend response status ${resp.status}`);
+    }
+  } catch (err) {
     // Try Firestore
     if (window.firebaseReady && window.db) {
       try {
@@ -118,16 +114,4 @@ function createTrackerCard(app) {
     </div>
   `;
   return card;
-}
-
-function formatDate(dateStr) {
-  if (!dateStr) return '—';
-  try {
-    const d = new Date(dateStr.seconds ? dateStr.seconds * 1000 : dateStr);
-    return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-  } catch { return '—'; }
-}
-
-function escapeHtml(str) {
-  return String(str || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
