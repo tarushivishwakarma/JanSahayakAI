@@ -417,37 +417,200 @@ function getFaqAnswer(query) {
 }
 
 /**
+ * Validate and clean URLs from AI Markdown responses.
+ * Rejects dangerous schemes (javascript:, data:, vbscript:, file:, etc.)
+ * Normalizes nested/duplicated Markdown links and extracts only the safe HTTP/HTTPS URL.
+ */
+function sanitizeBotUrl(rawUrl) {
+  if (!rawUrl || typeof rawUrl !== 'string') return null;
+
+  let cleaned = rawUrl.trim();
+
+  // Strip enclosing angle brackets (both raw and HTML-escaped): <https://...> or &lt;https://...&gt;
+  cleaned = cleaned.replace(/^(?:<|&lt;)+|(?:>|&gt;)+$/gi, '').trim();
+
+  // Handle nested/duplicated markdown link inside parentheses:
+  // e.g. [https://pmkisan.gov.in](https://pmkisan.gov.in) -> extract the inner URL
+  while (/\[.*?\]\((https?:\/\/[^\s\)]+)\)/i.test(cleaned)) {
+    const nestedMatch = cleaned.match(/\[.*?\]\((https?:\/\/[^\s\)]+)\)/i);
+    if (nestedMatch) {
+      cleaned = nestedMatch[1];
+    } else {
+      break;
+    }
+  }
+
+  // Strip enclosing brackets or parens wrapping the URL
+  if (cleaned.startsWith('[') && cleaned.endsWith(']')) {
+    cleaned = cleaned.slice(1, -1).trim();
+  }
+  if (cleaned.startsWith('(') && cleaned.endsWith(')')) {
+    cleaned = cleaned.slice(1, -1).trim();
+  }
+  cleaned = cleaned.replace(/^(?:<|&lt;)+|(?:>|&gt;)+$/gi, '').trim();
+
+
+  // Extract the URL candidate starting with http:// or https://
+  const httpMatch = cleaned.match(/^https?:\/\/[^\s"'>]+/i);
+  if (!httpMatch) {
+    // Rejects dangerous protocols: javascript:, data:, vbscript:, file:, etc.
+    return null;
+  }
+
+  cleaned = httpMatch[0];
+
+  // Strip trailing punctuation (brackets, commas, periods, semicolons)
+  cleaned = cleaned.replace(/[\]\.,;]+$/, '');
+
+  // Only strip trailing closing parenthesis if it is an unmatched closing paren
+  while (cleaned.endsWith(')')) {
+    const openCount = (cleaned.match(/\(/g) || []).length;
+    const closeCount = (cleaned.match(/\)/g) || []).length;
+    if (closeCount > openCount) {
+      cleaned = cleaned.slice(0, -1);
+    } else {
+      break;
+    }
+  }
+
+  // Strip any stray square brackets
+  if (/[\[\]]/.test(cleaned)) {
+    cleaned = cleaned.replace(/[\[\]]/g, '');
+  }
+
+  // Validate protocol strictly
+  try {
+    const parsed = new URL(cleaned);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return null;
+    }
+    return cleaned;
+  } catch {
+    if (/^https?:\/\/[a-zA-Z0-9\-._~:/?#[\]@!$&'()*+,;%=]+$/i.test(cleaned)) {
+      return cleaned;
+    }
+    return null;
+  }
+}
+
+/**
  * Clean and format AI bot response with safe HTML escaping and markdown formatting.
+ * Strictly prevents XSS, removes all raw Markdown syntax (*, #, `, ---, etc.),
+ * and renders clean semantic HTML (bold, headings, bullet/numbered lists, links, dividers).
  */
 function formatBotResponse(text) {
   if (!text) return '';
-  // 1. Escape unsafe HTML characters
+
+  // 1. Escape raw HTML first for security (strictly prevent XSS)
   let safe = escapeHtml(String(text).trim());
 
-  // 2. Convert markdown bold **text** to <strong>text</strong>
+  // 2. Normalize line breaks
+  safe = safe.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+  // 3. Inline backticks `code` -> display text without backticks
+  safe = safe.replace(/`([^`]+)`/g, '$1');
+  safe = safe.replace(/`/g, '');
+
+  // 4. Strikethrough ~~text~~
+  safe = safe.replace(/~~(.*?)~~/g, '<del>$1</del>');
+  safe = safe.replace(/~/g, '');
+
+  // 5. Markdown links: [text](url)
+  // Pre-normalize nested/duplicated Markdown URLs:
+  // e.g. [label]([url](url)) -> [label](url)
+  safe = safe.replace(/\[([^\]]+)\]\(\s*\[([^\]]*)\]\((https?:\/\/[^\s\)]+)\)\s*\)/gi, '[$1]($3)');
+  // e.g. [label]([url]) -> [label](url)
+  safe = safe.replace(/\[([^\]]+)\]\(\s*\[(https?:\/\/[^\s\]]+)\]\s*\)/gi, '[$1]($2)');
+  // e.g. [label](<url>) or [label](&lt;url&gt;) -> [label](url)
+  safe = safe.replace(/\[([^\]]+)\]\(\s*(?:<|&lt;)(https?:\/\/[^\s>&]+)(?:>|&gt;)\s*\)/gi, '[$1]($2)');
+  // e.g. [label]() -> label
+  safe = safe.replace(/\[([^\]]+)\]\(\s*\)/g, '$1');
+
+  // Main Markdown link replacement supporting balanced parentheses
+  safe = safe.replace(
+    /\[([^\]]+)\]\((((?:\([^()\s]*\)|[^()\s])+))\)/g,
+    (match, label, rawTarget) => {
+      const cleanUrl = sanitizeBotUrl(rawTarget);
+      if (cleanUrl) {
+        return `<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer" style="color:var(--color-primary-light);text-decoration:underline;">${label}</a>`;
+      }
+      // If dangerous (javascript:, data:) or invalid, strip link and render label safely
+      return label;
+    }
+  );
+
+
+
+  // 6. Bold and Bold-Italic (**text**, ***text***, __text__)
+  safe = safe.replace(/\*\*\*(.*?)\*\*\*/g, '<strong><em>$1</em></strong>');
   safe = safe.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  safe = safe.replace(/__(.*?)__/g, '<strong>$1</strong>');
 
-  // 3. Convert markdown links [text](url) to safe clickable links
-  safe = safe.replace(/\[([^\]]+)\]\((https?:\/\/[^\s\)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" style="color:var(--color-primary-light);text-decoration:underline;">$1</a>');
-
-  // 4. Convert bullet lines like "* item" or "- item" to <li> elements
+  // 7. Process line-based markdown elements
   const lines = safe.split('\n');
   const formattedLines = lines.map(line => {
     const trimmed = line.trim();
-    if (trimmed.startsWith('* ') || trimmed.startsWith('- ') || trimmed.startsWith('• ')) {
-      const content = trimmed.substring(2).trim();
-      return `<li style="margin-left:1.2rem;margin-bottom:0.25rem;">${content}</li>`;
+
+    // Horizontal Rule: ---, ***, ___ (at least 3 characters)
+    if (/^([-*_]\s*){3,}$/.test(trimmed)) {
+      return '<hr class="faq-bot-hr" style="border:none;border-top:1px solid rgba(0,0,0,0.15);margin:0.5rem 0;" />';
     }
+
+    // Headings: #, ##, ###, ####, etc.
+    const headingMatch = trimmed.match(/^(#{1,6})\s+(.+)$/);
+    if (headingMatch) {
+      const level = headingMatch[1].length;
+      const headingText = headingMatch[2].trim();
+      const fontSize = level === 1 ? '1.08rem' : level === 2 ? '1.02rem' : '0.95rem';
+      return `<div class="faq-bot-heading" style="font-weight:700;font-size:${fontSize};margin-top:0.5rem;margin-bottom:0.25rem;">${headingText}</div>`;
+    }
+
+    // Numbered / Ordered List: 1. item, 2. item
+    const orderedMatch = trimmed.match(/^(\d+)\.\s+(.+)$/);
+    if (orderedMatch) {
+      const num = orderedMatch[1];
+      const content = orderedMatch[2].trim();
+      return `<li class="faq-bot-list-item" style="list-style-type:decimal;margin-left:1.25rem;margin-bottom:0.25rem;" value="${num}">${content}</li>`;
+    }
+
+    // Bullet list: * item, - item, + item, • item
+    const bulletMatch = trimmed.match(/^[\*\-\+•]\s+(.+)$/);
+    if (bulletMatch) {
+      const content = bulletMatch[1].trim();
+      return `<li class="faq-bot-list-item" style="list-style-type:disc;margin-left:1.25rem;margin-bottom:0.25rem;">${content}</li>`;
+    }
+
+    // Blockquote: &gt; quote
+    if (trimmed.startsWith('&gt; ')) {
+      return `<div style="border-left:3px solid var(--color-orange);padding-left:0.6rem;margin:0.4rem 0;opacity:0.9;">${trimmed.substring(5)}</div>`;
+    }
+
     return line;
   });
 
-  safe = formattedLines.join('<br />').replace(/(<br \/>\s*)+(<li)/g, '$2').replace(/(<\/li>)\s*(<br \/>)+/g, '$1');
+  // 8. Join lines and normalize spacing
+  let result = formattedLines.join('<br />');
 
-  // 5. Convert inline markdown italic *text* (excluding bullet asterisks)
-  safe = safe.replace(/(?<!\*)\*([^\s\*](?:[^*]*?[^\s\*])?)\*(?!\*)/g, '<em>$1</em>');
+  // Remove awkward <br /> around block elements (li, heading div, hr)
+  result = result.replace(/(<br \/>\s*)+(<li)/g, '$2');
+  result = result.replace(/(<\/li>)\s*(<br \/>)+/g, '$1');
+  result = result.replace(/(<br \/>\s*)*(<div class="faq-bot-heading"[^>]*>)/g, '$2');
+  result = result.replace(/(<\/div>)\s*(<br \/>)*/g, '$1');
+  result = result.replace(/(<br \/>\s*)*(<hr[^>]*>)\s*(<br \/>)*/g, '$2');
+  result = result.replace(/(<br \/>\s*){3,}/g, '<br /><br />');
 
-  return safe;
+  // 9. Convert inline italic *text* or _text_
+  result = result.replace(/(?<!\*)\*([^\s\*](?:[^*]*?[^\s\*])?)\*(?!\*)/g, '<em>$1</em>');
+  result = result.replace(/(?<!_)_([^\s_](?:[^_]*?[^\s_])?)_(?!_)/g, '<em>$1</em>');
+
+  // 10. Clean up any remaining stray raw markdown characters
+  result = result.replace(/^[ \t]*#+[ \t]*/gm, '');
+  result = result.replace(/\*{1,3}/g, '');
+  result = result.replace(/(?<!\w)_(?!\w)/g, '');
+
+  return result;
 }
+
 
 
 async function sendFaqMessage(overrideText) {

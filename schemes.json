@@ -6,19 +6,45 @@
     "category": "Central",
     "state": "All",
     "minIncome": 0,
-    "maxIncome": 500000,
-    "occupation": ["Farmer"],
-    "minAge": 18,
+    "maxIncome": 10000000,
+    "occupation": [
+      "Farmer"
+    ],
+    "minAge": 0,
     "maxAge": 120,
     "gender": "All",
-    "socialCategory": ["General", "OBC", "SC", "ST"],
-    "benefit": "₹6000/year",
-    "benefitHi": "₹6000/वर्ष",
-    "description": "Direct income support to farmers",
-    "descriptionHi": "किसानों को प्रत्यक्ष आय सहायता",
-    "documents": ["Aadhaar", "Bank Account", "Land Records"],
+    "socialCategory": [
+      "General",
+      "OBC",
+      "SC",
+      "ST"
+    ],
+    "benefit": "₹6,000/year (in 3 equal installments of ₹2,000)",
+    "benefitHi": "₹6,000/वर्ष (3 समान किस्तों में ₹2,000)",
+    "description": "Direct income support to landholding farmer families across India",
+    "descriptionHi": "भारत भर के भूमिधारक किसान परिवारों को प्रत्यक्ष आय सहायता",
+    "documents": [
+      "Aadhaar Card",
+      "Land Records (Khata/Khasra/ROR)",
+      "Bank Account (Aadhaar-seeded)"
+    ],
     "applyLink": "https://pmkisan.gov.in",
-    "disability": "Any"
+    "disability": "Any",
+    "officialEligibility": "Landholder farmer families who own cultivable land in their names as per state/UT land records. Subject to exclusion categories (institutional landholders, constitutional post holders, current/former ministers, government employees, pensioners with monthly pension ≥ ₹10,000, income tax payers, registered professionals).",
+    "officialEligibilityHi": "वे भूमिधारक किसान परिवार जिनके नाम पर कृषि योग्य भूमि है। संस्थागत भूमिधारक, संवैधानिक पद धारक, मंत्री, सरकारी कर्मचारी, ₹10,000 से अधिक मासिक पेंशनभोगी, आयकरदाता और पंजीकृत पेशेवर इसके पात्र नहीं हैं।",
+    "officialAge": "Not specified in official source (benefit is for landholder farmer family)",
+    "officialIncome": "Not specified in official source (no income ceiling; subject to exclusion categories)",
+    "officialDisability": "Not specified in official source (eligible regardless of disability status)",
+    "exclusions": [
+      "Institutional landholders",
+      "Constitutional post holders (former and present)",
+      "Former and present Ministers, MPs, MLAs, MLCs, Mayors, District Panchayat Chairpersons",
+      "Serving or retired Government officers and employees (excluding Class IV / Group D / MTS)",
+      "Pensioners with monthly pension of ₹10,000 or more (excluding Class IV / Group D / MTS)",
+      "Income tax payers in the last assessment year",
+      "Registered professionals (Doctors, Engineers, Lawyers, Chartered Accountants, Architects)"
+    ],
+    "officialSource": "https://pmkisan.gov.in (Ministry of Agriculture & Farmers Welfare, Operational Guidelines)"
   },
   {
     "id": 2,
@@ -28,18 +54,35 @@
     "state": "All",
     "minIncome": 0,
     "maxIncome": 300000,
-    "occupation": ["All"],
+    "occupation": [
+      "All"
+    ],
     "minAge": 0,
     "maxAge": 120,
     "gender": "All",
-    "socialCategory": ["General", "OBC", "SC", "ST"],
-    "benefit": "₹5 lakh health cover",
-    "benefitHi": "₹5 लाख स्वास्थ्य कवर",
-    "description": "Free health insurance for low income families",
-    "descriptionHi": "निम्न आय परिवारों के लिए मुफ्त स्वास्थ्य बीमा",
-    "documents": ["Aadhaar", "Ration Card", "Income Certificate"],
+    "socialCategory": [
+      "General",
+      "OBC",
+      "SC",
+      "ST"
+    ],
+    "benefit": "₹5 lakh health cover/family/year",
+    "benefitHi": "₹5 लाख स्वास्थ्य कवर/परिवार/वर्ष",
+    "description": "Cashless secondary and tertiary hospitalization cover for low-income & vulnerable families",
+    "descriptionHi": "निम्न आय और कमजोर परिवारों के लिए कैशलेस अस्पताल भर्ती स्वास्थ्य कवर",
+    "documents": [
+      "Aadhaar Card",
+      "Ration Card",
+      "Family ID"
+    ],
     "applyLink": "https://pmjay.gov.in",
-    "disability": "Any"
+    "disability": "Any",
+    "officialEligibility": "Deprived and vulnerable families identified based on SECC 2011 deprivation criteria and expanded NFSA / State beneficiary lists. Also covers all senior citizens aged 70+ under Ayushman Vay Vandana Card regardless of income.",
+    "officialEligibilityHi": "SECC 2011 और NFSA के आधार पर चिन्हित वंचित परिवार। 70 वर्ष या उससे अधिक आयु के सभी वरिष्ठ नागरिक भी पात्र हैं।",
+    "officialAge": "Not specified in official source (family coverage for all ages; 70+ under Vay Vandana)",
+    "officialIncome": "Not specified in official source (eligibility based on SECC deprivation / NFSA status, not a flat income cap)",
+    "officialDisability": "Not specified in official source (eligible regardless of disability status)",
+    "officialSource": "https://pmjay.gov.in (National Health Authority, Ministry of Health and Family Welfare)"
   },
   {
     "id": 3,
@@ -49,18 +92,37 @@
     "state": "All",
     "minIncome": 0,
     "maxIncome": 250000,
-    "occupation": ["Student"],
+    "occupation": [
+      "Student"
+    ],
     "minAge": 16,
     "maxAge": 30,
     "gender": "All",
-    "socialCategory": ["OBC", "SC", "ST"],
+    "socialCategory": [
+      "General",
+      "OBC",
+      "SC",
+      "ST"
+    ],
     "benefit": "₹10,000-50,000/year",
     "benefitHi": "₹10,000-50,000/वर्ष",
-    "description": "Merit-cum-means scholarship for students",
+    "description": "Merit-cum-means scholarships for school and higher education students",
     "descriptionHi": "छात्रों के लिए मेरिट-सह-आय छात्रवृत्ति",
-    "documents": ["Aadhaar", "Marksheet", "Income Certificate", "Caste Certificate"],
+    "documents": [
+      "Aadhaar Card",
+      "Academic Marksheet",
+      "Income Certificate",
+      "Caste Certificate",
+      "Bank Account Details"
+    ],
     "applyLink": "https://scholarships.gov.in",
-    "disability": "Any"
+    "disability": "Any",
+    "officialEligibility": "Students enrolled in recognized schools, colleges, or universities. Covers Post-Matric & Pre-Matric SC, ST, OBC, Minority, and General merit students based on specific scheme guidelines.",
+    "officialEligibilityHi": "मान्यता प्राप्त संस्थानों में नामांकित छात्र। विशिष्ट योजना के अनुसार SC, ST, OBC, अल्पसंख्यक और सामान्य वर्ग के छात्र पात्र हैं।",
+    "officialAge": "Not specified in official source (varies by scheme level from Class 1 to PhD)",
+    "officialIncome": "Annual family income up to ₹2,50,000 (up to ₹4.5L or ₹8L for certain specific central schemes)",
+    "officialDisability": "Not specified in official source (special provisions exist for students with disabilities)",
+    "officialSource": "https://scholarships.gov.in (Ministry of Electronics and Information Technology / Ministry of Education)"
   },
   {
     "id": 4,
@@ -70,19 +132,37 @@
     "state": "All",
     "minIncome": 0,
     "maxIncome": 200000,
-    "occupation": ["All"],
+    "occupation": [
+      "All"
+    ],
     "minAge": 40,
-    "maxAge": 59,
+    "maxAge": 79,
     "gender": "Female",
-    "socialCategory": ["General", "OBC", "SC", "ST"],
+    "socialCategory": [
+      "General",
+      "OBC",
+      "SC",
+      "ST"
+    ],
     "benefit": "₹300-500/month",
     "benefitHi": "₹300-500/माह",
-    "description": "Pension for widows aged 40-59",
-    "descriptionHi": "40-59 वर्ष की विधवाओं के लिए पेंशन",
-    "documents": ["Aadhaar", "Husband's Death Certificate", "Income Certificate", "Bank Account"],
+    "description": "Monthly pension for BPL widows aged 40-79 years",
+    "descriptionHi": "40-79 वर्ष की बीपीएल विधवाओं के लिए मासिक पेंशन",
+    "documents": [
+      "Aadhaar Card",
+      "Husband's Death Certificate",
+      "BPL Proof / Income Certificate",
+      "Bank Account Details"
+    ],
     "applyLink": "https://nsap.nic.in",
     "disability": "Any",
-    "maritalStatus": "Widow"
+    "maritalStatus": "Widow",
+    "officialEligibility": "Widows aged 40 to 79 years belonging to a household living Below Poverty Line (BPL) as per Government of India criteria.",
+    "officialEligibilityHi": "भारत सरकार के मानदंडों के अनुसार गरीबी रेखा से नीचे (BPL) जीवन यापन करने वाले परिवार की 40 से 79 वर्ष की विधवाएं।",
+    "officialAge": "40 to 79 years (transitions to higher old age pension rate at age 80)",
+    "officialIncome": "Below Poverty Line (BPL) household",
+    "officialDisability": "Not specified in official source",
+    "officialSource": "https://nsap.nic.in (Ministry of Rural Development, National Social Assistance Programme)"
   },
   {
     "id": 5,
@@ -92,18 +172,36 @@
     "state": "All",
     "minIncome": 0,
     "maxIncome": 200000,
-    "occupation": ["All"],
+    "occupation": [
+      "All"
+    ],
     "minAge": 60,
     "maxAge": 120,
     "gender": "All",
-    "socialCategory": ["General", "OBC", "SC", "ST"],
+    "socialCategory": [
+      "General",
+      "OBC",
+      "SC",
+      "ST"
+    ],
     "benefit": "₹200-500/month",
     "benefitHi": "₹200-500/माह",
-    "description": "Pension for senior citizens living below poverty line",
-    "descriptionHi": "गरीबी रेखा से नीचे रहने वाले वरिष्ठ नागरिकों के लिए पेंशन",
-    "documents": ["Aadhaar", "Age Proof", "Income Certificate", "Bank Account"],
+    "description": "Monthly social security pension for BPL senior citizens aged 60+",
+    "descriptionHi": "60 वर्ष से अधिक आयु के बीपीएल वरिष्ठ नागरिकों के लिए मासिक सामाजिक सुरक्षा पेंशन",
+    "documents": [
+      "Aadhaar Card",
+      "Proof of Age",
+      "BPL Proof / Income Certificate",
+      "Bank Account Details"
+    ],
     "applyLink": "https://nsap.nic.in",
-    "disability": "Any"
+    "disability": "Any",
+    "officialEligibility": "Senior citizens aged 60 years and above belonging to a household living Below Poverty Line (BPL).",
+    "officialEligibilityHi": "60 वर्ष और उससे अधिक आयु के वरिष्ठ नागरिक जो गरीबी रेखा से नीचे (BPL) परिवार से संबंधित हैं।",
+    "officialAge": "60 years and above (₹200/mo for ages 60-79; ₹500/mo for ages 80+ from Central Govt, topped up by States)",
+    "officialIncome": "Below Poverty Line (BPL) household",
+    "officialDisability": "Not specified in official source",
+    "officialSource": "https://nsap.nic.in (Ministry of Rural Development, National Social Assistance Programme)"
   },
   {
     "id": 6,
@@ -113,18 +211,36 @@
     "state": "All",
     "minIncome": 0,
     "maxIncome": 1500000,
-    "occupation": ["Trader", "Worker"],
+    "occupation": [
+      "Trader",
+      "Worker"
+    ],
     "minAge": 18,
     "maxAge": 40,
     "gender": "All",
-    "socialCategory": ["General", "OBC", "SC", "ST"],
-    "benefit": "₹3000/month after 60",
-    "benefitHi": "60 के बाद ₹3000/माह",
-    "description": "Pension scheme for small traders and self-employed",
-    "descriptionHi": "छोटे व्यापारियों और स्व-रोजगार के लिए पेंशन योजना",
-    "documents": ["Aadhaar", "Bank Account", "GST Registration"],
+    "socialCategory": [
+      "General",
+      "OBC",
+      "SC",
+      "ST"
+    ],
+    "benefit": "₹3,000/month assured pension",
+    "benefitHi": "₹3,000/माह सुनिश्चित पेंशन",
+    "description": "Old-age pension scheme for shopkeepers, retail traders, and self-employed persons",
+    "descriptionHi": "दुकानदारों, खुदरा व्यापारियों और स्व-नियोजित व्यक्तियों के लिए वृद्धावस्था पेंशन योजना",
+    "documents": [
+      "Aadhaar Card",
+      "Savings Bank Account / Jan Dhan Account",
+      "GSTIN (if turnover > ₹40L)"
+    ],
     "applyLink": "https://maandhan.in",
-    "disability": "Any"
+    "disability": "Any",
+    "officialEligibility": "Shopkeepers, retail traders, and self-employed persons aged 18-40 years with annual turnover not exceeding ₹1.5 Crore. Must not be covered under EPFO/ESIC/PM-SYM or be an income tax payer.",
+    "officialEligibilityHi": "18-40 वर्ष के खुदरा व्यापारी और स्व-नियोजित व्यक्ति जिनका वार्षिक टर्नओवर ₹1.5 करोड़ से अधिक न हो।",
+    "officialAge": "18 to 40 years",
+    "officialIncome": "Annual business turnover not exceeding ₹1.5 Crore (and not an income tax payer)",
+    "officialDisability": "Not specified in official source",
+    "officialSource": "https://maandhan.in (Ministry of Labour and Employment)"
   },
   {
     "id": 7,
@@ -134,39 +250,75 @@
     "state": "All",
     "minIncome": 0,
     "maxIncome": 1800000,
-    "occupation": ["All"],
+    "occupation": [
+      "All"
+    ],
     "minAge": 21,
     "maxAge": 70,
     "gender": "All",
-    "socialCategory": ["General", "OBC", "SC", "ST"],
-    "benefit": "₹1.2-2.5 lakh subsidy",
-    "benefitHi": "₹1.2-2.5 लाख सब्सिडी",
-    "description": "Housing for all - affordable housing scheme",
-    "descriptionHi": "सभी के लिए आवास - किफायती आवास योजना",
-    "documents": ["Aadhaar", "Income Certificate", "Property Documents", "Bank Account"],
+    "socialCategory": [
+      "General",
+      "OBC",
+      "SC",
+      "ST"
+    ],
+    "benefit": "Financial assistance up to ₹1.2-2.67 lakh",
+    "benefitHi": "₹1.2-2.67 लाख तक की वित्तीय सहायता",
+    "description": "Affordable housing assistance for homeless families and kutcha house dwellers",
+    "descriptionHi": "बेघर परिवारों और कच्चे मकानों में रहने वालों के लिए किफायती आवास सहायता",
+    "documents": [
+      "Aadhaar Card",
+      "Income Certificate / Self-Declaration",
+      "Property / Land Documents",
+      "Bank Account Details"
+    ],
     "applyLink": "https://pmaymis.gov.in",
-    "disability": "Any"
+    "disability": "Any",
+    "officialEligibility": "Beneficiary family must not own a pucca (permanent) house in any part of India. Classified into EWS (income up to ₹3 lakh), LIG (₹3–6 lakh), and rural houseless / kutcha house dwellers under SECC/Awas+.",
+    "officialEligibilityHi": "लाभार्थी परिवार के पास भारत में कहीं भी पक्का मकान नहीं होना चाहिए। ईडब्ल्यूएस (₹3 लाख तक), एलआईजी और ग्रामीण बेघर परिवार।",
+    "officialAge": "Not specified in official source (must be adult head/earning member of the family)",
+    "officialIncome": "EWS: ≤ ₹3 lakh/year; LIG: ₹3-6 lakh/year; Rural: based on deprivation/kutcha house criteria",
+    "officialDisability": "Not specified in official source (preference given in ground floor allocations)",
+    "officialSource": "https://pmaymis.gov.in / https://pmayg.nic.in (Ministry of Housing and Urban Affairs & Ministry of Rural Development)"
   },
   {
     "id": 8,
     "name": "Indira Gandhi National Disability Pension",
-    "nameHi": "इंदिरा गांधी राष्ट्रीय विकलांगता पेंशन",
+    "nameHi": "इंदिरा गांधी राष्ट्रीय दिव्यांग पेंशन",
     "category": "Central",
     "state": "All",
     "minIncome": 0,
     "maxIncome": 200000,
-    "occupation": ["All"],
+    "occupation": [
+      "All"
+    ],
     "minAge": 18,
-    "maxAge": 120,
+    "maxAge": 79,
     "gender": "All",
-    "socialCategory": ["General", "OBC", "SC", "ST"],
+    "socialCategory": [
+      "General",
+      "OBC",
+      "SC",
+      "ST"
+    ],
     "benefit": "₹300-500/month",
     "benefitHi": "₹300-500/माह",
-    "description": "Pension for persons with severe disability",
-    "descriptionHi": "गंभीर विकलांगता वाले व्यक्तियों के लिए पेंशन",
-    "documents": ["Aadhaar", "Disability Certificate (>80%)", "Income Certificate", "Bank Account"],
+    "description": "Monthly pension for BPL individuals with severe disability (80%+)",
+    "descriptionHi": "गंभीर दिव्यांगता (80%+) वाले बीपीएल व्यक्तियों के लिए मासिक पेंशन",
+    "documents": [
+      "Aadhaar Card",
+      "Disability Certificate (≥80% disability)",
+      "BPL Proof / Income Certificate",
+      "Bank Account Details"
+    ],
     "applyLink": "https://nsap.nic.in",
-    "disability": "Yes"
+    "disability": "Yes",
+    "officialEligibility": "Persons aged 18 to 79 years with severe or multiple disabilities (disability degree of 80% or higher) belonging to a household living Below Poverty Line (BPL).",
+    "officialEligibilityHi": "18 से 79 वर्ष के व्यक्ति जो 80% या उससे अधिक गंभीर दिव्यांगता रखते हैं और बीपीएल परिवार से हैं।",
+    "officialAge": "18 to 79 years (transitions to higher old-age pension rate at age 80)",
+    "officialIncome": "Below Poverty Line (BPL) household",
+    "officialDisability": "Severe or multiple disability of 80% or more (certified by competent medical authority)",
+    "officialSource": "https://nsap.nic.in (Ministry of Rural Development, National Social Assistance Programme)"
   },
   {
     "id": 9,
@@ -176,81 +328,158 @@
     "state": "All",
     "minIncome": 0,
     "maxIncome": 5000000,
-    "occupation": ["Trader", "Worker"],
+    "occupation": [
+      "Trader",
+      "Worker"
+    ],
     "minAge": 18,
     "maxAge": 65,
     "gender": "All",
-    "socialCategory": ["General", "OBC", "SC", "ST"],
-    "benefit": "Loan up to ₹10 lakh",
-    "benefitHi": "₹10 लाख तक ऋण",
-    "description": "Micro-finance scheme for small businesses",
-    "descriptionHi": "छोटे व्यवसायों के लिए सूक्ष्म-वित्त योजना",
-    "documents": ["Aadhaar", "Business Plan", "Bank Account", "Address Proof"],
+    "socialCategory": [
+      "General",
+      "OBC",
+      "SC",
+      "ST"
+    ],
+    "benefit": "Collateral-free business loan up to ₹10-20 lakh",
+    "benefitHi": "₹10-20 लाख तक का बिना गारंटी व्यापार ऋण",
+    "description": "Collateral-free institutional credit for micro and small business enterprises",
+    "descriptionHi": "सूक्ष्म और लघु व्यवसाय उद्यमों के लिए संपार्श्विक-मुक्त संस्थागत ऋण",
+    "documents": [
+      "Aadhaar Card / Identity Proof",
+      "Address Proof",
+      "Business Project Plan / Enterprise Proof",
+      "Bank Statement"
+    ],
     "applyLink": "https://www.mudra.org.in",
-    "disability": "Any"
+    "disability": "Any",
+    "officialEligibility": "Any Indian citizen with a business proposal for a non-farm income-generating micro/small enterprise in manufacturing, trading, or service sectors.",
+    "officialEligibilityHi": "विनिर्माण, व्यापार या सेवा क्षेत्रों में गैर-कृषि आय सृजन करने वाले सूक्ष्म/लघु उद्यम के लिए कोई भी भारतीय नागरिक।",
+    "officialAge": "Minimum 18 years (no statutory upper age limit in central guidelines)",
+    "officialIncome": "Not specified in official source (no income ceiling; loan is for micro/small businesses)",
+    "officialDisability": "Not specified in official source",
+    "officialSource": "https://www.mudra.org.in (Department of Financial Services, Ministry of Finance)"
   },
   {
     "id": 10,
     "name": "Kanya Sumangala Yojana (UP)",
-    "nameHi": "कन्या सुमंगला योजना (यूपी)",
+    "nameHi": "कन्या सुमंगला योजना (उत्तर प्रदेश)",
     "category": "State",
     "state": "Uttar Pradesh",
     "minIncome": 0,
     "maxIncome": 300000,
-    "occupation": ["All"],
+    "occupation": [
+      "All"
+    ],
     "minAge": 0,
     "maxAge": 25,
     "gender": "Female",
-    "socialCategory": ["General", "OBC", "SC", "ST"],
-    "benefit": "₹15,000 in stages",
-    "benefitHi": "चरणों में ₹15,000",
-    "description": "Financial assistance for girl child education and welfare",
-    "descriptionHi": "बालिका शिक्षा और कल्याण के लिए वित्तीय सहायता",
-    "documents": ["Aadhaar", "Birth Certificate", "Income Certificate", "Bank Account"],
+    "socialCategory": [
+      "General",
+      "OBC",
+      "SC",
+      "ST"
+    ],
+    "benefit": "₹25,000 in 6 phased installments",
+    "benefitHi": "6 चरणों में ₹25,000 की वित्तीय सहायता",
+    "description": "Conditional financial support for girl children in UP from birth to higher education",
+    "descriptionHi": "जन्म से लेकर उच्च शिक्षा तक उत्तर प्रदेश में बालिकाओं के लिए वित्तीय सहायता",
+    "documents": [
+      "Aadhaar (Girl & Parents)",
+      "Birth Certificate",
+      "UP Domicile Certificate",
+      "Income Certificate",
+      "Bank Passbook"
+    ],
     "applyLink": "https://mksy.up.gov.in",
-    "disability": "Any"
+    "disability": "Any",
+    "officialEligibility": "Permanent resident of Uttar Pradesh. Maximum two girl children per family. Family annual income must not exceed ₹3,00,000.",
+    "officialEligibilityHi": "उत्तर प्रदेश का स्थायी निवासी। प्रति परिवार अधिकतम दो बालिकाएं। परिवार की वार्षिक आय ₹3,00,000 से अधिक न हो।",
+    "officialAge": "From birth up to higher education/graduation (stages: birth, vaccination, class 1, 6, 9, and degree entry)",
+    "officialIncome": "Annual family income ≤ ₹3,00,000",
+    "officialDisability": "Not specified in official source",
+    "officialSource": "https://mksy.up.gov.in (Women and Child Development Department, Government of Uttar Pradesh)"
   },
   {
     "id": 11,
     "name": "UP Scholarship Scheme",
-    "nameHi": "यूपी छात्रवृत्ति योजना",
+    "nameHi": "उत्तर प्रदेश छात्रवृत्ति योजना",
     "category": "State",
     "state": "Uttar Pradesh",
     "minIncome": 0,
     "maxIncome": 200000,
-    "occupation": ["Student"],
+    "occupation": [
+      "Student"
+    ],
     "minAge": 16,
     "maxAge": 30,
     "gender": "All",
-    "socialCategory": ["OBC", "SC", "ST"],
-    "benefit": "₹5,000-25,000/year",
-    "benefitHi": "₹5,000-25,000/वर्ष",
-    "description": "State scholarship for SC/ST/OBC students",
-    "descriptionHi": "SC/ST/OBC छात्रों के लिए राज्य छात्रवृत्ति",
-    "documents": ["Aadhaar", "Marksheet", "Income Certificate", "Caste Certificate"],
+    "socialCategory": [
+      "General",
+      "OBC",
+      "SC",
+      "ST"
+    ],
+    "benefit": "Tuition fee reimbursement and maintenance allowance",
+    "benefitHi": "शिक्षण शुल्क प्रतिपूर्ति और रखरखाव भत्ता",
+    "description": "Pre-matric and post-matric scholarship for students domiciled in Uttar Pradesh",
+    "descriptionHi": "उत्तर प्रदेश के मूल निवासी छात्रों के लिए प्री-मैट्रिक और पोस्ट-मैट्रिक छात्रवृत्ति",
+    "documents": [
+      "Aadhaar Card",
+      "Academic Marksheet",
+      "UP Domicile Certificate",
+      "Income Certificate",
+      "Caste Certificate",
+      "Bank Passbook"
+    ],
     "applyLink": "https://scholarship.up.gov.in",
-    "disability": "Any"
+    "disability": "Any",
+    "officialEligibility": "Students domiciled in Uttar Pradesh enrolled in recognized schools, colleges, or universities in Pre-Matric (9-10) and Post-Matric courses.",
+    "officialEligibilityHi": "मान्यता प्राप्त संस्थानों में प्री-मैट्रिक और पोस्ट-मैट्रिक पाठ्यक्रमों में नामांकित उत्तर प्रदेश के मूल निवासी छात्र।",
+    "officialAge": "Not specified in official source (aligned with academic course requirements)",
+    "officialIncome": "Annual family income ≤ ₹2,00,000 for General/OBC/Minority; ≤ ₹2,50,000 for SC/ST",
+    "officialDisability": "Not specified in official source",
+    "officialSource": "https://scholarship.up.gov.in (Social Welfare Department, Government of Uttar Pradesh)"
   },
   {
     "id": 12,
     "name": "Maharashtra Sanjay Gandhi Niradhar Scheme",
-    "nameHi": "महाराष्ट्र संजय गांधी निराधार योजना",
+    "nameHi": "संजय गांधी निराधार अनुदान योजना (महाराष्ट्र)",
     "category": "State",
     "state": "Maharashtra",
     "minIncome": 0,
-    "maxIncome": 250000,
-    "occupation": ["All"],
-    "minAge": 65,
+    "maxIncome": 21000,
+    "occupation": [
+      "All"
+    ],
+    "minAge": 18,
     "maxAge": 120,
     "gender": "All",
-    "socialCategory": ["General", "OBC", "SC", "ST"],
-    "benefit": "₹600/month",
-    "benefitHi": "₹600/माह",
-    "description": "Financial assistance to destitute senior citizens",
-    "descriptionHi": "निराश्रित वरिष्ठ नागरिकों को वित्तीय सहायता",
-    "documents": ["Aadhaar", "Age Proof", "Income Certificate", "Bank Account"],
+    "socialCategory": [
+      "General",
+      "OBC",
+      "SC",
+      "ST"
+    ],
+    "benefit": "₹1,000-1,500/month",
+    "benefitHi": "₹1,000-1,500/माह",
+    "description": "Financial aid for destitute persons, disabled, and widows in Maharashtra",
+    "descriptionHi": "महाराष्ट्र में निराधार व्यक्तियों, दिव्यांगों और विधवाओं के लिए वित्तीय सहायता",
+    "documents": [
+      "Aadhaar Card",
+      "Maharashtra Domicile Certificate (15 years)",
+      "Age Proof",
+      "Income Certificate (≤ ₹21,000/yr)",
+      "Bank Passbook"
+    ],
     "applyLink": "https://aaplesarkar.mahaonline.gov.in",
-    "disability": "Any"
+    "disability": "Any",
+    "officialEligibility": "Destitute persons, widows, divorced women, or persons with disability (40%+) domiciled in Maharashtra for 15+ years with annual family income up to ₹21,000.",
+    "officialEligibilityHi": "महाराष्ट्र में 15 वर्ष से निवासी निराधार व्यक्ति, विधवाएं, दिव्यांग (40%+) जिनकी वार्षिक पारिवारिक आय ₹21,000 से कम हो।",
+    "officialAge": "65 years and above for destitute elderly; 18-64 for destitute disabled, widows, and orphans",
+    "officialIncome": "Annual family income ≤ ₹21,000",
+    "officialDisability": "Covers disabled persons (minimum 40% disability) as well as destitute elderly and widows",
+    "officialSource": "https://aaplesarkar.mahaonline.gov.in (Social Justice & Special Assistance Department, Govt of Maharashtra)"
   },
   {
     "id": 13,
@@ -260,39 +489,75 @@
     "state": "Karnataka",
     "minIncome": 0,
     "maxIncome": 300000,
-    "occupation": ["All"],
+    "occupation": [
+      "All"
+    ],
     "minAge": 0,
     "maxAge": 120,
     "gender": "All",
-    "socialCategory": ["General", "OBC", "SC", "ST"],
-    "benefit": "10kg free rice/month",
-    "benefitHi": "10 किलो मुफ्त चावल/माह",
-    "description": "Free rice for BPL families",
-    "descriptionHi": "BPL परिवारों के लिए मुफ्त चावल",
-    "documents": ["Ration Card", "Aadhaar", "Income Certificate"],
+    "socialCategory": [
+      "General",
+      "OBC",
+      "SC",
+      "ST"
+    ],
+    "benefit": "10 kg free food grains per person/month",
+    "benefitHi": "प्रति व्यक्ति 10 किलोग्राम मुफ्त खाद्यान्न प्रति माह",
+    "description": "Free food grains / DBT cash support for BPL and Antyodaya households in Karnataka",
+    "descriptionHi": "कर्नाटक में बीपीएल और अंत्योदय परिवारों के लिए मुफ्त खाद्यान्न / डीबीटी नकद सहायता",
+    "documents": [
+      "BPL / AAY Ration Card",
+      "Aadhaar Card (Aadhaar-seeded bank account)"
+    ],
     "applyLink": "https://ahara.kar.nic.in",
-    "disability": "Any"
+    "disability": "Any",
+    "officialEligibility": "Residents of Karnataka holding valid Antyodaya Anna Yojana (AAY) or Priority Household (PHH/BPL) ration cards.",
+    "officialEligibilityHi": "कर्नाटक के निवासी जिनके पास वैध अंत्योदय या प्राथमिकता (बीपीएल) राशन कार्ड है।",
+    "officialAge": "Not specified in official source (covers all members of the household)",
+    "officialIncome": "BPL / Antyodaya ration cardholder status",
+    "officialDisability": "Not specified in official source",
+    "officialSource": "https://ahara.kar.nic.in (Food, Civil Supplies & Consumer Affairs Department, Government of Karnataka)"
   },
   {
     "id": 14,
     "name": "Stand Up India Scheme",
-    "nameHi": "स्टैंड अप इंडिया योजना",
+    "nameHi": "स्टैंड-अप इंडिया योजना",
     "category": "Central",
     "state": "All",
     "minIncome": 0,
     "maxIncome": 5000000,
-    "occupation": ["Trader", "Worker"],
+    "occupation": [
+      "Trader",
+      "Worker"
+    ],
     "minAge": 18,
     "maxAge": 65,
     "gender": "All",
-    "socialCategory": ["SC", "ST"],
-    "benefit": "Loan ₹10 lakh - ₹1 crore",
-    "benefitHi": "ऋण ₹10 लाख - ₹1 करोड़",
-    "description": "Loans for SC/ST and women entrepreneurs",
-    "descriptionHi": "SC/ST और महिला उद्यमियों के लिए ऋण",
-    "documents": ["Aadhaar", "Business Plan", "Caste Certificate", "Bank Account"],
+    "socialCategory": [
+      "General",
+      "OBC",
+      "SC",
+      "ST"
+    ],
+    "benefit": "Bank loan between ₹10 lakh and ₹1 crore",
+    "benefitHi": "₹10 लाख से ₹1 करोड़ तक का बैंक ऋण",
+    "description": "Bank financing for SC, ST, and Women entrepreneurs setting up greenfield enterprises",
+    "descriptionHi": "ग्रीनफील्ड उद्यम स्थापित करने वाले अनुसूचित जाति, अनुसूचित जनजाति और महिला उद्यमियों के लिए बैंक ऋण",
+    "documents": [
+      "Aadhaar Card",
+      "PAN Card",
+      "Caste Certificate (for SC/ST)",
+      "Business Project Report",
+      "Bank Statements"
+    ],
     "applyLink": "https://www.standupmitra.in",
-    "disability": "Any"
+    "disability": "Any",
+    "officialEligibility": "SC/ST borrowers and/or Women entrepreneurs (of any social category) aged 18+ establishing a greenfield project in manufacturing, services, agri-allied, or trading.",
+    "officialEligibilityHi": "18 वर्ष से अधिक आयु के SC/ST और/या महिला उद्यमी जो विनिर्माण, सेवा, व्यापार में पहला उद्यम स्थापित कर रहे हों।",
+    "officialAge": "18 years and above",
+    "officialIncome": "Not specified in official source (no income ceiling; for bank credit)",
+    "officialDisability": "Not specified in official source",
+    "officialSource": "https://www.standupmitra.in (Department of Financial Services, Ministry of Finance)"
   },
   {
     "id": 15,
@@ -301,19 +566,36 @@
     "category": "Central",
     "state": "All",
     "minIncome": 0,
-    "maxIncome": 300000,
-    "occupation": ["All"],
+    "maxIncome": 800000,
+    "occupation": [
+      "All"
+    ],
     "minAge": 19,
     "maxAge": 45,
     "gender": "Female",
-    "socialCategory": ["General", "OBC", "SC", "ST"],
-    "benefit": "₹5,000 for first child",
-    "benefitHi": "पहले बच्चे के लिए ₹5,000",
-    "description": "Maternity benefit for pregnant and lactating women",
-    "descriptionHi": "गर्भवती और स्तनपान कराने वाली महिलाओं के लिए मातृत्व लाभ",
-    "documents": ["Aadhaar", "Pregnancy Certificate", "Bank Account", "Marriage Certificate"],
-    "applyLink": "https://pmmvy-cas.nic.in",
-    "disability": "Any"
+    "socialCategory": [
+      "General",
+      "OBC",
+      "SC",
+      "ST"
+    ],
+    "benefit": "₹5,000 for 1st child, ₹6,000 for 2nd (girl) child",
+    "benefitHi": "पहले बच्चे के लिए ₹5,000, दूसरे (कन्या) बच्चे के लिए ₹6,000",
+    "description": "Maternity cash benefit for pregnant women and lactating mothers for health & nutrition",
+    "descriptionHi": "गर्भवती और स्तनपान कराने वाली माताओं के लिए मातृत्व नकद प्रोत्साहन",
+    "documents": [
+      "Aadhaar (Mother and Husband)",
+      "MCP Card / LMP Details",
+      "Bank Account (Aadhaar-seeded)"
+    ],
+    "applyLink": "https://pmmvy.wcd.gov.in",
+    "disability": "Any",
+    "officialEligibility": "Pregnant Women and Lactating Mothers aged 19+ belonging to socially/economically disadvantaged sections (BPL, e-Shram, PM-JAY, SC/ST, women with disability, or income ≤ ₹8L). Excludes women in regular government employment.",
+    "officialEligibilityHi": "19 वर्ष या उससे अधिक आयु की गर्भवती और स्तनपान कराने वाली माताएं जो वंचित वर्गों से हैं। नियमित सरकारी कर्मचारी पात्र नहीं हैं।",
+    "officialAge": "Minimum 19 years at the time of pregnancy",
+    "officialIncome": "Socially/economically disadvantaged sections or annual family income ≤ ₹8,00,000",
+    "officialDisability": "Not specified in official source (women with disability receive priority categorization)",
+    "officialSource": "https://pmmvy.wcd.gov.in (Ministry of Women and Child Development)"
   },
   {
     "id": 16,
@@ -323,39 +605,75 @@
     "state": "All",
     "minIncome": 0,
     "maxIncome": 500000,
-    "occupation": ["Worker", "Trader"],
+    "occupation": [
+      "Worker",
+      "Trader"
+    ],
     "minAge": 18,
     "maxAge": 40,
     "gender": "All",
-    "socialCategory": ["General", "OBC", "SC", "ST"],
-    "benefit": "₹1000-5000/month after 60",
-    "benefitHi": "60 के बाद ₹1000-5000/माह",
-    "description": "Pension scheme for unorganized sector workers",
-    "descriptionHi": "असंगठित क्षेत्र के श्रमिकों के लिए पेंशन योजना",
-    "documents": ["Aadhaar", "Bank Account", "Mobile Number"],
-    "applyLink": "https://npscra.nsdl.co.in/atal-pension-yojana.php",
-    "disability": "Any"
+    "socialCategory": [
+      "General",
+      "OBC",
+      "SC",
+      "ST"
+    ],
+    "benefit": "Guaranteed monthly pension of ₹1,000 to ₹5,000",
+    "benefitHi": "₹1,000 से ₹5,000 तक की गारंटीकृत मासिक पेंशन",
+    "description": "Guaranteed voluntary pension scheme for unorganized sector workers after age 60",
+    "descriptionHi": "60 वर्ष की आयु के बाद असंगठित क्षेत्र के श्रमिकों के लिए गारंटीकृत स्वैच्छिक पेंशन योजना",
+    "documents": [
+      "Aadhaar Card",
+      "Savings Bank Account / Post Office Account",
+      "Registered Mobile Number"
+    ],
+    "applyLink": "https://www.npscra.nsdl.co.in",
+    "disability": "Any",
+    "officialEligibility": "All Indian citizens aged 18 to 40 years holding a savings bank or post office account. Any citizen who is or has been an Income-Tax payer is not eligible to join (effective 1 Oct 2022).",
+    "officialEligibilityHi": "18 से 40 वर्ष के सभी भारतीय नागरिक जिनका बचत बैंक खाता है। आयकरदाता इसमें शामिल होने के पात्र नहीं हैं।",
+    "officialAge": "18 to 40 years",
+    "officialIncome": "Not specified in official source (no numeric income ceiling; statutory exclusion of income-tax payers)",
+    "officialDisability": "Not specified in official source",
+    "officialSource": "https://www.npscra.nsdl.co.in / https://enps.nsdl.com (PFRDA, Ministry of Finance)"
   },
   {
     "id": 17,
-    "name": "Free Silai Machine Yojana",
-    "nameHi": "मुफ्त सिलाई मशीन योजना",
+    "name": "PM Vishwakarma Scheme",
+    "nameHi": "पीएम विश्वकर्मा योजना",
     "category": "Central",
     "state": "All",
     "minIncome": 0,
     "maxIncome": 250000,
-    "occupation": ["Worker"],
-    "minAge": 20,
-    "maxAge": 40,
-    "gender": "Female",
-    "socialCategory": ["General", "OBC", "SC", "ST"],
-    "benefit": "Free sewing machine",
-    "benefitHi": "मुफ्त सिलाई मशीन",
-    "description": "Free sewing machines for women to promote self-employment",
-    "descriptionHi": "स्व-रोजगार को बढ़ावा देने के लिए महिलाओं के लिए मुफ्त सिलाई मशीन",
-    "documents": ["Aadhaar", "Income Certificate", "Age Proof", "Bank Account"],
-    "applyLink": "https://www.india.gov.in",
-    "disability": "Any"
+    "occupation": [
+      "Worker"
+    ],
+    "minAge": 18,
+    "maxAge": 60,
+    "gender": "All",
+    "socialCategory": [
+      "General",
+      "OBC",
+      "SC",
+      "ST"
+    ],
+    "benefit": "₹15,000 toolkit incentive, training stipend, and loans up to ₹3 lakh @ 5%",
+    "benefitHi": "₹15,000 टूलकिट प्रोत्साहन, प्रशिक्षण वजीफा और 5% पर ₹3 लाख तक का ऋण",
+    "description": "Support for traditional artisans and craftspeople across 18 trades (including Tailors/Darzi, Carpenters, etc.)",
+    "descriptionHi": "18 पारंपरिक व्यवसायों (दर्जी, बढ़ई आदि सहित) के कारीगरों और शिल्पकारों के लिए समग्र सहायता",
+    "documents": [
+      "Aadhaar Card",
+      "Mobile Number",
+      "Bank Account Details",
+      "Ration Card (Family Verification)"
+    ],
+    "applyLink": "https://pmvishwakarma.gov.in",
+    "disability": "Any",
+    "officialEligibility": "Traditional artisans and craftspeople working with hands and tools in one of 18 recognized traditional trades (including Darzi/Tailor, Carpenter, Blacksmith, Potter, Mason, Cobbler). Family members in government service excluded.",
+    "officialEligibilityHi": "18 मान्यता प्राप्त पारंपरिक व्यवसायों (दर्जी, बढ़ई, लोहार, कुम्हार आदि) में हाथों और औजारों से काम करने वाले कारीगर।",
+    "officialAge": "Minimum 18 years",
+    "officialIncome": "Not specified in official source (engaged in self-employment in traditional trade)",
+    "officialDisability": "Not specified in official source",
+    "officialSource": "https://pmvishwakarma.gov.in (Ministry of MSME & Ministry of Skill Development)"
   },
   {
     "id": 18,
@@ -365,39 +683,74 @@
     "state": "All",
     "minIncome": 0,
     "maxIncome": 300000,
-    "occupation": ["All"],
+    "occupation": [
+      "All"
+    ],
     "minAge": 0,
     "maxAge": 120,
     "gender": "All",
-    "socialCategory": ["General", "OBC", "SC", "ST"],
-    "benefit": "5kg free food grains/person",
-    "benefitHi": "5 किलो मुफ्त खाद्यान्न/व्यक्ति",
-    "description": "Free food grains to poor families",
-    "descriptionHi": "गरीब परिवारों को मुफ्त खाद्यान्न",
-    "documents": ["Ration Card", "Aadhaar"],
+    "socialCategory": [
+      "General",
+      "OBC",
+      "SC",
+      "ST"
+    ],
+    "benefit": "5 kg free food grains per person/month (35 kg/family for AAY)",
+    "benefitHi": "5 किलो मुफ्त खाद्यान्न प्रति व्यक्ति/माह (अंत्योदय के लिए 35 किलो/परिवार)",
+    "description": "Free food grains entitlement for Antyodaya (AAY) and Priority Household (PHH) ration cardholders",
+    "descriptionHi": "अंत्योदय और प्राथमिकता राशन कार्डधारकों के लिए मुफ्त खाद्यान्न योजना",
+    "documents": [
+      "NFSA Ration Card (PHH or AAY)",
+      "Aadhaar Card"
+    ],
     "applyLink": "https://nfsa.gov.in",
-    "disability": "Any"
+    "disability": "Any",
+    "officialEligibility": "All beneficiaries covered under the National Food Security Act (NFSA), including Antyodaya Anna Yojana (AAY) families and Priority Households (PHH).",
+    "officialEligibilityHi": "राष्ट्रीय खाद्य सुरक्षा अधिनियम (NFSA) के तहत आने वाले सभी लाभार्थी (अंत्योदय और प्राथमिकता परिवार)।",
+    "officialAge": "Not specified in official source (covers all family members on the ration card)",
+    "officialIncome": "NFSA BPL / Antyodaya eligibility criteria",
+    "officialDisability": "Not specified in official source",
+    "officialSource": "https://nfsa.gov.in (Department of Food & Public Distribution, Ministry of Consumer Affairs)"
   },
   {
     "id": 19,
-    "name": "National Education Policy Scholarship",
-    "nameHi": "राष्ट्रीय शिक्षा नीति छात्रवृत्ति",
+    "name": "PM-YASASVI Scholarship Scheme",
+    "nameHi": "पीएम-यशस्वी छात्रवृत्ति योजना",
     "category": "Central",
     "state": "All",
     "minIncome": 0,
-    "maxIncome": 400000,
-    "occupation": ["Student"],
-    "minAge": 10,
-    "maxAge": 25,
+    "maxIncome": 350000,
+    "occupation": [
+      "Student"
+    ],
+    "minAge": 12,
+    "maxAge": 18,
     "gender": "All",
-    "socialCategory": ["General", "OBC", "SC", "ST"],
-    "benefit": "₹12,000-48,000/year",
-    "benefitHi": "₹12,000-48,000/वर्ष",
-    "description": "Scholarship for meritorious students from economically weaker sections",
-    "descriptionHi": "आर्थिक रूप से कमजोर वर्गों के मेधावी छात्रों के लिए छात्रवृत्ति",
-    "documents": ["Aadhaar", "Marksheet", "Income Certificate", "School Certificate"],
+    "socialCategory": [
+      "General",
+      "OBC",
+      "SC",
+      "ST"
+    ],
+    "benefit": "Scholarship of ₹12,000-75,000/year for school students",
+    "benefitHi": "स्कूली छात्रों के लिए ₹12,000-75,000/वर्ष की छात्रवृत्ति",
+    "description": "Scholarship for meritorious students from economically weaker and backward sections in Class 9-12",
+    "descriptionHi": "कक्षा 9-12 के आर्थिक रूप से कमजोर और पिछड़े वर्ग के मेधावी छात्रों के लिए छात्रवृत्ति",
+    "documents": [
+      "Aadhaar Card",
+      "Academic Marksheet",
+      "Income Certificate",
+      "Caste / Category Certificate",
+      "Bank Account Details"
+    ],
     "applyLink": "https://scholarships.gov.in",
-    "disability": "Any"
+    "disability": "Any",
+    "officialEligibility": "Meritorious students from OBC, EBC, DNT, and economically weaker sections studying in Class 9 to Class 12 in recognized schools with parental income up to ₹2.5-3.5 lakh.",
+    "officialEligibilityHi": "मान्यता प्राप्त स्कूलों में कक्षा 9 से 12 में पढ़ने वाले मेधावी छात्र जिनकी पारिवारिक आय ₹2.5-3.5 लाख से कम हो।",
+    "officialAge": "Not specified in official source (typically 12 to 18 years based on school grade)",
+    "officialIncome": "Annual family income ≤ ₹2,50,000 to ₹3,50,000 depending on specific sub-scheme",
+    "officialDisability": "Not specified in official source",
+    "officialSource": "https://scholarships.gov.in (Ministry of Social Justice and Empowerment / Ministry of Education)"
   },
   {
     "id": 20,
@@ -407,18 +760,35 @@
     "state": "All",
     "minIncome": 0,
     "maxIncome": 10000000,
-    "occupation": ["All"],
+    "occupation": [
+      "All"
+    ],
     "minAge": 0,
     "maxAge": 10,
     "gender": "Female",
-    "socialCategory": ["General", "OBC", "SC", "ST"],
-    "benefit": "High interest savings (8.2%)",
-    "benefitHi": "उच्च ब्याज बचत (8.2%)",
-    "description": "Savings scheme for girl child with tax benefits",
-    "descriptionHi": "कर लाभ के साथ बालिका के लिए बचत योजना",
-    "documents": ["Girl's Birth Certificate", "Parent's Aadhaar", "Bank Account"],
+    "socialCategory": [
+      "General",
+      "OBC",
+      "SC",
+      "ST"
+    ],
+    "benefit": "High sovereign interest (8.2%) with EEE tax exemption",
+    "benefitHi": "8.2% की उच्च ब्याज दर और पूर्ण कर छूट (EEE)",
+    "description": "Small deposit savings scheme for girl child with high government interest and tax benefits",
+    "descriptionHi": "उच्च ब्याज और कर लाभ के साथ बालिकाओं के लिए लघु बचत योजना",
+    "documents": [
+      "Girl's Birth Certificate",
+      "Identity & Address Proof of Parent/Guardian (Aadhaar/PAN)",
+      "Bank / Post Office Passbook"
+    ],
     "applyLink": "https://www.indiapost.gov.in",
-    "disability": "Any"
+    "disability": "Any",
+    "officialEligibility": "Resident Indian girl child from birth until attaining 10 years of age. Maximum two accounts per family (one per girl, with exception for twins/triplets). Open to all income groups.",
+    "officialEligibilityHi": "जन्म से 10 वर्ष की आयु तक की भारतीय बालिकाएं। प्रति परिवार अधिकतम दो खाते। सभी आय वर्गों के लिए खुला।",
+    "officialAge": "From birth up to 10 years of age (account must be opened before girl turns 10)",
+    "officialIncome": "Not specified in official source (no income limit; open to all families)",
+    "officialDisability": "Not specified in official source",
+    "officialSource": "https://www.indiapost.gov.in (National Savings Institute, Ministry of Finance)"
   },
   {
     "id": 21,
@@ -428,18 +798,34 @@
     "state": "All",
     "minIncome": 0,
     "maxIncome": 500000,
-    "occupation": ["All"],
+    "occupation": [
+      "All"
+    ],
     "minAge": 0,
     "maxAge": 21,
     "gender": "Female",
-    "socialCategory": ["General", "OBC", "SC", "ST"],
-    "benefit": "Education support & awareness",
-    "benefitHi": "शिक्षा सहायता और जागरूकता",
-    "description": "Campaign to save and educate girl child",
-    "descriptionHi": "बालिका को बचाने और शिक्षित करने का अभियान",
-    "documents": ["Birth Certificate", "Aadhaar", "School Certificate"],
+    "socialCategory": [
+      "General",
+      "OBC",
+      "SC",
+      "ST"
+    ],
+    "benefit": "Institutional welfare support, education access, and advocacy",
+    "benefitHi": "संस्थागत कल्याणकारी सहायता, शिक्षा प्रोत्साहन और जागरूकता",
+    "description": "National advocacy campaign to improve child sex ratio and promote girl child education",
+    "descriptionHi": "बाल लिंगानुपात में सुधार और बालिकाओं की शिक्षा को बढ़ावा देने के लिए राष्ट्रीय अभियान",
+    "documents": [
+      "Birth Certificate",
+      "School ID / Anganwadi Registration"
+    ],
     "applyLink": "https://wcd.nic.in",
-    "disability": "Any"
+    "disability": "Any",
+    "officialEligibility": "National campaign for all girl children across India. Note: BBBP is an advocacy and institutional awareness initiative; it does NOT offer direct cash transfers or individual deposit accounts to citizens.",
+    "officialEligibilityHi": "भारत भर की सभी बालिकाओं के लिए राष्ट्रीय अभियान। नोट: यह जन-जागरूकता और संस्थागत अभियान है, इसमें कोई प्रत्यक्ष नकद हस्तांतरण नहीं होता है।",
+    "officialAge": "Not specified in official source (comprehensive child welfare initiative)",
+    "officialIncome": "Not specified in official source (no income restriction; public advocacy initiative without direct cash transfer)",
+    "officialDisability": "Not specified in official source",
+    "officialSource": "https://wcd.nic.in (Ministry of Women and Child Development)"
   },
   {
     "id": 22,
@@ -449,18 +835,33 @@
     "state": "All",
     "minIncome": 0,
     "maxIncome": 10000000,
-    "occupation": ["All"],
+    "occupation": [
+      "All"
+    ],
     "minAge": 10,
     "maxAge": 120,
     "gender": "All",
-    "socialCategory": ["General", "OBC", "SC", "ST"],
-    "benefit": "Free bank account + ₹10k overdraft",
-    "benefitHi": "मुफ्त बैंक खाता + ₹10k ओवरड्राफ्ट",
-    "description": "Financial inclusion - free bank accounts for all",
-    "descriptionHi": "वित्तीय समावेशन - सभी के लिए मुफ्त बैंक खाते",
-    "documents": ["Aadhaar", "Address Proof", "Mobile Number"],
+    "socialCategory": [
+      "General",
+      "OBC",
+      "SC",
+      "ST"
+    ],
+    "benefit": "Zero-balance bank account, ₹2 lakh accident cover, ₹10k overdraft",
+    "benefitHi": "शून्य-शेष बैंक खाता, ₹2 लाख दुर्घटना बीमा, ₹10,000 ओवरड्राफ्ट",
+    "description": "National mission for financial inclusion providing universal access to banking facilities",
+    "descriptionHi": "बैंकिंग सुविधाओं तक सार्वभौमिक पहुंच प्रदान करने वाला राष्ट्रीय वित्तीय समावेशन मिशन",
+    "documents": [
+      "Aadhaar Card (or any Officially Valid Document / Voter ID / PAN / Driving License)"
+    ],
     "applyLink": "https://pmjdy.gov.in",
-    "disability": "Any"
+    "disability": "Any",
+    "officialEligibility": "Any Indian citizen aged 10 years and above who does not already have a basic savings bank account. No minimum balance required.",
+    "officialEligibilityHi": "10 वर्ष या उससे अधिक आयु का कोई भी भारतीय नागरिक। न्यूनतम शेष राशि की कोई आवश्यकता नहीं है।",
+    "officialAge": "10 years and above (minor accounts from age 10)",
+    "officialIncome": "Not specified in official source (no income restriction; zero balance basic account)",
+    "officialDisability": "Not specified in official source",
+    "officialSource": "https://pmjdy.gov.in (Department of Financial Services, Ministry of Finance)"
   },
   {
     "id": 23,
@@ -469,19 +870,37 @@
     "category": "Central",
     "state": "All",
     "minIncome": 0,
-    "maxIncome": 1000000,
-    "occupation": ["Farmer"],
+    "maxIncome": 10000000,
+    "occupation": [
+      "Farmer"
+    ],
     "minAge": 18,
     "maxAge": 120,
     "gender": "All",
-    "socialCategory": ["General", "OBC", "SC", "ST"],
-    "benefit": "Crop insurance at 2% premium",
-    "benefitHi": "2% प्रीमियम पर फसल बीमा",
-    "description": "Crop insurance scheme for farmers against natural calamities",
-    "descriptionHi": "प्राकृतिक आपदाओं के खिलाफ किसानों के लिए फसल बीमा योजना",
-    "documents": ["Aadhaar", "Land Records", "Bank Account", "Sowing Certificate"],
+    "socialCategory": [
+      "General",
+      "OBC",
+      "SC",
+      "ST"
+    ],
+    "benefit": "Comprehensive crop loss insurance at 1.5-2% subsidized farmer premium",
+    "benefitHi": "1.5-2% रियायती प्रीमियम पर व्यापक फसल नुकसान बीमा",
+    "description": "Affordable crop loss insurance against non-preventable natural risks for farmers",
+    "descriptionHi": "किसानों के लिए प्राकृतिक आपदाओं से फसल क्षति के विरुद्ध किफायती फसल बीमा",
+    "documents": [
+      "Aadhaar Card",
+      "Land Records (Khatauni/LPC) or Tenancy/Sharecropper Agreement",
+      "Sowing Certificate",
+      "Bank Account Details"
+    ],
     "applyLink": "https://pmfby.gov.in",
-    "disability": "Any"
+    "disability": "Any",
+    "officialEligibility": "All farmers (including sharecroppers and tenant farmers) growing notified crops in notified areas who have an insurable interest in the cultivated crop.",
+    "officialEligibilityHi": "अधिसूचित क्षेत्रों में अधिसूचित फसल उगाने वाले सभी किसान (बटाईदार और काश्तकार किसानों सहित)।",
+    "officialAge": "Not specified in official source (any adult farmer with insurable crop interest)",
+    "officialIncome": "Not specified in official source (no income ceiling; covers small, marginal, and large farmers)",
+    "officialDisability": "Not specified in official source",
+    "officialSource": "https://pmfby.gov.in (Ministry of Agriculture and Farmers Welfare)"
   },
   {
     "id": 24,
@@ -491,18 +910,34 @@
     "state": "All",
     "minIncome": 0,
     "maxIncome": 10000000,
-    "occupation": ["Farmer"],
-    "minAge": 18,
+    "occupation": [
+      "Farmer"
+    ],
+    "minAge": 0,
     "maxAge": 120,
     "gender": "All",
-    "socialCategory": ["General", "OBC", "SC", "ST"],
-    "benefit": "Free soil testing & advice",
-    "benefitHi": "मुफ्त मिट्टी परीक्षण और सलाह",
-    "description": "Free soil health cards for farmers with nutrient status",
-    "descriptionHi": "पोषक तत्व स्थिति के साथ किसानों के लिए मुफ्त मृदा स्वास्थ्य कार्ड",
-    "documents": ["Aadhaar", "Land Records"],
+    "socialCategory": [
+      "General",
+      "OBC",
+      "SC",
+      "ST"
+    ],
+    "benefit": "Free soil test card with crop-wise nutrient & fertilizer advice every 3 years",
+    "benefitHi": "हर 3 साल में फसल-वार पोषक तत्व और उर्वरक सलाह के साथ मुफ्त मृदा परीक्षण कार्ड",
+    "description": "Free soil nutrient testing and customized fertilizer advisory to optimize crop yield",
+    "descriptionHi": "फसल की पैदावार बढ़ाने के लिए मुफ्त मिट्टी परीक्षण और अनुकूलित उर्वरक सलाह",
+    "documents": [
+      "Land Ownership / Tenancy Records (Khasra/Khata number)",
+      "Aadhaar / Farmer ID"
+    ],
     "applyLink": "https://soilhealth.dac.gov.in",
-    "disability": "Any"
+    "disability": "Any",
+    "officialEligibility": "All farmers across India who hold or cultivate agricultural land.",
+    "officialEligibilityHi": "भारत भर के वे सभी किसान जो कृषि भूमि के धारक हैं या खेती करते हैं।",
+    "officialAge": "Not specified in official source (any landholding or cultivating farmer)",
+    "officialIncome": "Not specified in official source (free public service, no income criteria)",
+    "officialDisability": "Not specified in official source",
+    "officialSource": "https://soilhealth.dac.gov.in (Department of Agriculture & Farmers Welfare)"
   },
   {
     "id": 25,
@@ -512,17 +947,34 @@
     "state": "Tamil Nadu",
     "minIncome": 0,
     "maxIncome": 250000,
-    "occupation": ["Student"],
+    "occupation": [
+      "Student"
+    ],
     "minAge": 16,
     "maxAge": 22,
     "gender": "All",
-    "socialCategory": ["General", "OBC", "SC", "ST"],
-    "benefit": "Free laptop/tablet",
-    "benefitHi": "मुफ्त लैपटॉप/टैबलेट",
-    "description": "Free laptops for students scoring above 60% in 12th",
-    "descriptionHi": "12वीं में 60% से अधिक स्कोर करने वाले छात्रों के लिए मुफ्त लैपटॉप",
-    "documents": ["Aadhaar", "12th Marksheet", "Income Certificate", "School Certificate"],
-    "applyLink": "https://laptop.tn.gov.in",
-    "disability": "Any"
+    "socialCategory": [
+      "General",
+      "OBC",
+      "SC",
+      "ST"
+    ],
+    "benefit": "Free laptop computer for higher education students",
+    "benefitHi": "उच्च शिक्षा के छात्रों के लिए मुफ्त लैपटॉप कंप्यूटर",
+    "description": "Free laptop distribution for students studying in Government and aided schools/colleges in Tamil Nadu",
+    "descriptionHi": "तमिलनाडु के सरकारी और सहायता प्राप्त स्कूलों/कॉलेजों में पढ़ने वाले छात्रों के लिए मुफ्त लैपटॉप",
+    "documents": [
+      "School / College Identity Card",
+      "Class 12 Marksheet / Enrollment Proof",
+      "Aadhaar Card"
+    ],
+    "applyLink": "https://elcot.in",
+    "disability": "Any",
+    "officialEligibility": "Students studying in or passed Class 12 from Government and Government-aided schools, Arts & Science colleges, Engineering colleges, and Polytechnics in Tamil Nadu.",
+    "officialEligibilityHi": "तमिलनाडु के सरकारी और सहायता प्राप्त स्कूलों और कॉलेजों में पढ़ने वाले छात्र।",
+    "officialAge": "Not specified in official source (based on school/college enrollment, typically 16-22 years)",
+    "officialIncome": "Not specified in official source (institutional enrollment based, not income means-tested)",
+    "officialDisability": "Not specified in official source",
+    "officialSource": "https://elcot.in (Special Programme Implementation Department, Govt of Tamil Nadu)"
   }
 ]

@@ -94,6 +94,11 @@ def _find_mentioned_schemes(text: str):
 
 def _format_scheme_summary(scheme: dict) -> dict:
     """Formats full verified details of a single scheme for LLM context."""
+    official_age = scheme.get("officialAge", "Not specified in official source")
+    official_income = scheme.get("officialIncome", "Not specified in official source")
+    official_disability = scheme.get("officialDisability", "Not specified in official source")
+    official_criteria = scheme.get("officialEligibility") or scheme.get("description")
+
     return {
         "id": scheme.get("id"),
         "name": scheme.get("name"),
@@ -105,28 +110,31 @@ def _format_scheme_summary(scheme: dict) -> dict:
         "benefit": scheme.get("benefit"),
         "benefit_hi": scheme.get("benefitHi"),
         "eligibility": {
+            "official_criteria": official_criteria,
             "target_occupations": scheme.get("occupation", []),
-            "min_age": scheme.get("minAge"),
-            "max_age": scheme.get("maxAge"),
-            "income_range": f"₹{scheme.get('minIncome', 0):,} - ₹{scheme.get('maxIncome', 0):,}/year" if scheme.get("maxIncome") else "No upper limit",
+            "age_limit": official_age,
+            "income_limit": official_income,
             "social_categories": scheme.get("socialCategory", []),
             "gender": scheme.get("gender", "All"),
-            "disability": scheme.get("disability", "Any")
+            "disability_criteria": official_disability,
+            "exclusions": scheme.get("exclusions", [])
         },
         "required_documents": scheme.get("documents", []),
-        "official_apply_link": scheme.get("applyLink", "")
+        "official_apply_link": scheme.get("applyLink", ""),
+        "official_source": scheme.get("officialSource", scheme.get("applyLink", ""))
     }
 
 
 def _format_compact_scheme(scheme: dict) -> str:
     """Formats a concise one-line summary of a scheme for the general catalog."""
     occupations = ", ".join(scheme.get("occupation", []))
-    income = f"≤ ₹{scheme.get('maxIncome', 0):,}/yr" if scheme.get("maxIncome") else "No income limit"
+    age_info = scheme.get("officialAge", "Not specified")
+    income_info = scheme.get("officialIncome", "Not specified")
     docs = ", ".join(scheme.get("documents", []))
     return (
         f"- ID {scheme.get('id')}: {scheme.get('name')} / {scheme.get('nameHi')} | "
         f"Category: {scheme.get('category')} | Target: {occupations} | "
-        f"Age: {scheme.get('minAge', 0)}-{scheme.get('maxAge', 100)} yrs | Income: {income} | "
+        f"Age: {age_info} | Income: {income_info} | "
         f"Benefit: {scheme.get('benefit')} ({scheme.get('benefitHi', '')}) | "
         f"Docs: {docs} | Portal: {scheme.get('applyLink')}"
     )
@@ -161,10 +169,15 @@ async def generate_chat_response(request: ChatRequest) -> str:
         "   - Use the verified schemes catalog provided below as your primary source of truth.\n"
         "   - NEVER invent fake government schemes, fake eligibility rules, fake monetary amounts, fake fees, or fake portal links.\n"
         "   - If a specific piece of information is genuinely not present in the verified dataset, clearly state that it is not in JanSahayak's verified database and recommend checking the official government portal.\n"
-        "2. ELIGIBILITY VS GENERAL INFORMATION:\n"
-        "   - Clearly separate eligibility criteria (age, income limit, occupation, social category) from scheme benefits and general descriptions.\n"
+        "2. ELIGIBILITY CRITERIA & STRICT FACTUAL GROUNDING:\n"
+        "   - The AI must NEVER convert an unknown or unspecified dataset field into a factual eligibility claim.\n"
+        "   - If an age limit is 'Not specified in official source', state clearly that the official information available does not specify a general age limit for this scheme, rather than inventing an age range (do NOT claim an 18–120 age range).\n"
+        "   - If an income limit is 'Not specified in official source', state clearly that there is no general income ceiling specified by the official source, rather than inferring one (do NOT claim a ≤ ₹5,00,000/year limit for PM Kisan).\n"
+        "   - If disability is 'Not specified in official source', do NOT present it as an eligibility requirement (do NOT claim 'Disability: Any disability status').\n"
+        "   - For PM Kisan Samman Nidhi, ground eligibility strictly on landholder farmer families who own cultivable land in their names, subject to statutory exclusion categories (institutional landholders, constitutional post holders, government employees, pensioners with monthly pension ≥ ₹10,000, income-tax payers, and registered professionals).\n"
+        "   - Clearly separate verified eligibility criteria from scheme benefits and general descriptions.\n"
         "   - Distinguish mandatory required documents from optional ones based on the verified data.\n"
-        "   - When recommending schemes (e.g. for farmers or students), list relevant verified schemes with their benefits, eligibility summary, and official apply links.\n"
+        "   - When recommending schemes (e.g. for farmers or students), list relevant verified schemes with their benefits, verified eligibility summary, and official apply links.\n"
         "3. PROFESSIONAL CITIZEN-HELP BEHAVIOR:\n"
         "   - Explain concepts in simple, citizen-friendly language. Avoid overly dense bureaucratic jargon.\n"
         "   - Never claim that an application was submitted unless it was processed through the official system.\n"
@@ -173,6 +186,7 @@ async def generate_chat_response(request: ChatRequest) -> str:
         f"4. LANGUAGE:\n"
         f"   - {lang_instruction}\n\n"
     )
+
 
     # 1. Specific scheme context (explicitly passed or detected from query)
     if request.scheme_context:
