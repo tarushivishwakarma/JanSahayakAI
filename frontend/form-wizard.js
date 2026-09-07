@@ -300,7 +300,12 @@ export function autoFillFromOcr(ocrData) {
 }
 
 function getBackendUrl() {
-  return localStorage.getItem('jansahayak-backend-url') || 'http://localhost:8000';
+  return (
+    localStorage.getItem('jansahayak-backend-url') ||
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      ? 'http://localhost:8000'
+      : 'https://jansahayakai-ukbl.onrender.com')
+  );
 }
 
 function escapeHtml(str) {

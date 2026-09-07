@@ -6,7 +6,11 @@
 import { t } from './i18n.js';
 import { showToast } from './app.js';
 
-const BACKEND_URL = localStorage.getItem('jansahayak-backend-url') || 'http://localhost:8000';
+const BACKEND_URL =
+  localStorage.getItem('jansahayak-backend-url') ||
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:8000'
+    : 'https://jansahayakai-ukbl.onrender.com');
 
 export function initOcr() {
   const ocrClose = document.getElementById('ocr-modal-close');

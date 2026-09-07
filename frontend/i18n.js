@@ -246,7 +246,8 @@ const translations = {
       ration: "Ration Card entitles families to subsidized food grains under PDS. Apply via Services → Ration Card with Aadhaar, family details, and income proof.",
       income: "Income Certificate is an official document certifying your annual income. It's needed for applying to many government schemes. Apply via Services → Income Certificate.",
       default: "I can help you with information about government schemes, required documents, and how to apply. Try asking about specific services like Aadhaar, PAN, pension, or scholarships!"
-    }
+    },
+    faqAiUnavailable: "I'm unable to get an AI response right now. I can still help with supported services such as Aadhaar, PAN, Pension, Scholarship, Ration Card and Income Certificate. You can also try asking about a specific government scheme."
   },
 
   hi: {
@@ -489,7 +490,8 @@ const translations = {
       ration: "राशन कार्ड परिवारों को PDS के तहत सब्सिडी वाले खाद्यान्न का अधिकार देता है। सेवाएं → राशन कार्ड के माध्यम से आधार, पारिवारिक विवरण और आय प्रमाण के साथ आवेदन करें।",
       income: "आय प्रमाण पत्र एक आधिकारिक दस्तावेज़ है जो आपकी वार्षिक आय को प्रमाणित करता है। यह कई सरकारी योजनाओं के लिए आवश्यक है। सेवाएं → आय प्रमाण पत्र के माध्यम से आवेदन करें।",
       default: "मैं सरकारी योजनाओं, आवश्यक दस्तावेजों और आवेदन कैसे करें के बारे में जानकारी में आपकी मदद कर सकता हूँ। आधार, PAN, पेंशन या छात्रवृत्ति जैसी विशिष्ट सेवाओं के बारे में पूछें!"
-    }
+    },
+    faqAiUnavailable: "अभी AI से उत्तर प्राप्त नहीं हो पा रहा है। मैं आधार, PAN, पेंशन, छात्रवृत्ति, राशन कार्ड और आय प्रमाण पत्र जैसी सेवाओं में सहायता कर सकता हूँ। आप किसी सरकारी योजना के बारे में भी पूछ सकते हैं।"
   }
 };
 

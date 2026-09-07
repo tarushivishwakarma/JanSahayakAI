@@ -5,8 +5,8 @@ from typing import Optional
 from datetime import datetime
 import uuid
 
-from models.schemas import ApplicationCreate, ApplicationResponse, StatusUpdate
-from services import firebase_service
+from schemas import ApplicationCreate, ApplicationResponse, StatusUpdate
+import firebase_service
 
 router = APIRouter()
 

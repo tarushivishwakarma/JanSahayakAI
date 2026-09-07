@@ -24,7 +24,12 @@ export function initSchemeResults({ onBack }) {
 
 async function loadSchemes() {
   try {
-    const res = await fetch('./data/schemes.json');
+    const backendUrl =
+      localStorage.getItem('jansahayak-backend-url') ||
+      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? 'http://localhost:8000'
+        : 'https://jansahayakai-ukbl.onrender.com');
+    const res = await fetch(`${backendUrl}/api/schemes`);
     schemesData = await res.json();
   } catch (e) {
     console.error('Failed to load schemes:', e);

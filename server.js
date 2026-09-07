@@ -26,6 +26,22 @@ const MIME = {
 const server = http.createServer((req, res) => {
   // Default to index.html for root
   const urlPath = req.url === '/' ? '/index.html' : req.url.split('?')[0];
+
+  // ── Shared data: serve schemes.json from repo root (single source of truth) ──
+  if (urlPath === '/schemes.json') {
+    const schemesPath = path.join(__dirname, 'schemes.json');
+    fs.readFile(schemesPath, (err, data) => {
+      if (err) {
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.end('404 Not Found: schemes.json');
+        return;
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' });
+      res.end(data);
+    });
+    return;
+  }
+
   const filePath = path.join(BASE_DIR, urlPath);
 
   // Security: prevent directory traversal
