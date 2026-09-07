@@ -112,7 +112,7 @@ async function handleFile(file) {
     const data = await response.json();
     if (data.success && data.extracted && Object.values(data.extracted).some(v => v !== null && v !== '')) {
       lastExtracted = data.extracted;
-      showOcrResult(data.extracted);
+      showOcrResult(data.extracted, data.confidence);
     } else {
       lastExtracted = null;
       showToast(
@@ -150,7 +150,7 @@ function showOcrFallbackNotice() {
   resultDiv.style.display = 'block';
 }
 
-function showOcrResult(extracted) {
+function showOcrResult(extracted, confidence) {
   const resultDiv = document.getElementById('ocr-result');
   const fieldsList = document.getElementById('ocr-fields-list');
 
@@ -166,6 +166,18 @@ function showOcrResult(extracted) {
   };
 
   fieldsList.innerHTML = '';
+
+  // Show authentic confidence indicator if measured
+  if (typeof confidence === 'number' && confidence > 0) {
+    const confRow = document.createElement('div');
+    confRow.style.cssText = 'padding:0.3rem 0.6rem;margin-bottom:0.4rem;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:var(--radius-sm);font-size:0.78rem;color:var(--color-green-light);display:flex;justify-content:space-between;align-items:center';
+    confRow.innerHTML = `
+      <span>🎯 Recognition Confidence</span>
+      <span style="font-weight:700">${Math.round(confidence * 100)}%</span>
+    `;
+    fieldsList.appendChild(confRow);
+  }
+
   Object.entries(extracted).forEach(([key, value]) => {
     if (value) {
       const row = document.createElement('div');

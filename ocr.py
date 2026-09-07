@@ -83,6 +83,11 @@ async def extract_ocr(file: UploadFile = File(...)):
 
     # 5. Run OCR extraction
     extracted = extract_text_from_image(file_bytes, file.filename or "")
+    confidence = None
+    raw_text = None
+    if isinstance(extracted, dict):
+        confidence = extracted.pop("_confidence", None)
+        raw_text = extracted.pop("_raw_text", None)
 
     # 6. Honest verification: check if any meaningful field was extracted
     has_data = any(v for v in extracted.values() if v)
@@ -96,6 +101,7 @@ async def extract_ocr(file: UploadFile = File(...)):
     return OcrResponse(
         success=has_data,
         extracted=extracted if has_data else None,
-        confidence=None,  # Truthful representation: no manufactured 0.85 score
+        confidence=confidence if has_data else None,
+        raw_text=raw_text if has_data else None,
         message=message
     )

@@ -7,7 +7,7 @@ import os
 import re
 import io
 import logging
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 
 logger = logging.getLogger("jansahayak.ocr")
 
@@ -93,16 +93,35 @@ def _preprocess_image(image):
     return image
 
 
-def _tesseract_extract(image) -> Dict[str, Optional[str]]:
-    """Use Tesseract to extract text and parse fields"""
+def _tesseract_extract(image) -> Dict[str, Any]:
+    """Use Tesseract to extract text, compute authentic confidence, and parse fields"""
     try:
         custom_config = r'--oem 3 --psm 6'
         try:
-            raw_text = pytesseract.image_to_string(image, lang='hin+eng', config=custom_config)
+            data = pytesseract.image_to_data(image, lang='hin+eng', config=custom_config, output_type=pytesseract.Output.DICT)
         except Exception:
-            raw_text = pytesseract.image_to_string(image, config=custom_config)
+            data = pytesseract.image_to_data(image, config=custom_config, output_type=pytesseract.Output.DICT)
 
-        return _parse_id_card_text(raw_text)
+        valid_confs = []
+        words = []
+        for i in range(len(data.get('text', []))):
+            w = str(data['text'][i]).strip()
+            c = data['conf'][i]
+            try:
+                conf_val = float(c)
+                if w and conf_val > 0:
+                    valid_confs.append(conf_val)
+                    words.append(w)
+            except (ValueError, TypeError):
+                continue
+
+        raw_text = " ".join(words)
+        avg_conf = round(sum(valid_confs) / len(valid_confs) / 100.0, 2) if valid_confs else None
+
+        extracted = _parse_id_card_text(raw_text)
+        extracted["_confidence"] = avg_conf
+        extracted["_raw_text"] = raw_text
+        return extracted
 
     except Exception as e:
         logger.error("Tesseract execution error: %s", type(e).__name__)
