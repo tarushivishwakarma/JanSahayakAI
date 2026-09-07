@@ -1,6 +1,7 @@
 import json
 import os
 import re
+from typing import Any, Dict, List
 import httpx
 from .config import LLM_API_KEY, LLM_MODEL, LLM_BASE_URL
 from .schemas import ChatRequest
@@ -13,6 +14,69 @@ try:
         SCHEMES_DATA = json.load(f)
 except Exception as e:
     print(f"Warning: Could not load schemes data for LLM service: {e}")
+
+
+def mask_pii_text(text: str) -> str:
+    """
+    Masks sensitive identifiers like Aadhaar and PAN numbers in text.
+    - Aadhaar: 12 digits (with optional spaces or dashes) -> XXXX-XXXX-1234
+    - PAN: 5 uppercase letters, 4 digits, 1 uppercase letter -> XXXXX1234X
+    Does not redact non-identifier numbers (e.g. age, income, pincodes).
+    """
+    if not text or not isinstance(text, str):
+        return text
+
+    # Aadhaar masking: match 12 digits formatted as 4-4-4 or 12 continuous digits
+    text = re.sub(
+        r'\b\d{4}[-\s]?\d{4}[-\s]?(\d{4})\b',
+        r'XXXX-XXXX-\1',
+        text
+    )
+
+    # PAN masking: 5 letters, 4 digits, 1 letter (e.g., ABCDE1234F -> XXXXX1234X)
+    text = re.sub(
+        r'\b[A-Za-z]{5}(\d{4})[A-Za-z]\b',
+        r'XXXXX\1X',
+        text
+    )
+
+    return text
+
+
+def sanitize_context(context: Any) -> Any:
+    """
+    Sanitizes context dictionaries or lists before passing to LLM.
+    - Masks Aadhaar and PAN values.
+    - Removes unnecessary full street addresses while keeping high-level region if available.
+    - Drops raw binary/image data or raw document text to prevent sensitive data leakage.
+    - Preserves eligibility-relevant fields (age, income, occupation, category, state).
+    """
+    if isinstance(context, dict):
+        sanitized = {}
+        for k, v in context.items():
+            k_str = str(k).lower()
+            # Drop unnecessary raw images or raw extracted text
+            if k_str in ("image", "document_image", "raw_image", "raw_text", "raw_extracted_text"):
+                continue
+            # Redact full street addresses
+            if k_str in ("address", "full_address", "street_address", "residential_address", "permanent_address"):
+                sanitized[k] = "[Address redacted for privacy]"
+                continue
+            # If the key itself is explicitly aadhaar or pan, ensure masked
+            if "aadhaar" in k_str:
+                sanitized[k] = mask_pii_text(str(v))
+                continue
+            if "pan" in k_str and ("number" in k_str or "card" in k_str or k_str == "pan"):
+                sanitized[k] = mask_pii_text(str(v))
+                continue
+            sanitized[k] = sanitize_context(v)
+        return sanitized
+    elif isinstance(context, list):
+        return [sanitize_context(item) for item in context]
+    elif isinstance(context, str):
+        return mask_pii_text(context)
+    else:
+        return context
 
 
 def _find_mentioned_schemes(text: str):
@@ -190,18 +254,21 @@ async def generate_chat_response(request: ChatRequest) -> str:
 
     # 1. Specific scheme context (explicitly passed or detected from query)
     if request.scheme_context:
-        system_prompt += f"PRIMARY SCHEME CONTEXT (User is actively viewing/inquiring about this scheme):\n{json.dumps(request.scheme_context, ensure_ascii=False)}\n\n"
+        safe_scheme_ctx = sanitize_context(request.scheme_context)
+        system_prompt += f"PRIMARY SCHEME CONTEXT (User is actively viewing/inquiring about this scheme):\n{json.dumps(safe_scheme_ctx, ensure_ascii=False)}\n\n"
     elif detected_schemes:
         focused_schemes = [_format_scheme_summary(s) for s in detected_schemes]
         system_prompt += f"MATCHED SCHEME DETAILS (User inquired about these specific verified schemes):\n{json.dumps(focused_schemes, ensure_ascii=False)}\n\n"
 
-    # 2. Document context (OCR or user document fields)
+    # 2. Document context (OCR or user document fields) - PII sanitized
     if request.document_context:
-        system_prompt += f"DOCUMENT CONTEXT (Extracted fields from user document):\n{json.dumps(request.document_context, ensure_ascii=False)}\n\n"
+        safe_doc_ctx = sanitize_context(request.document_context)
+        system_prompt += f"DOCUMENT CONTEXT (Extracted fields from user document):\n{json.dumps(safe_doc_ctx, ensure_ascii=False)}\n\n"
 
-    # 3. User profile context (if available)
+    # 3. User profile context (if available) - PII sanitized
     if request.user_context:
-        system_prompt += f"USER PROFILE CONTEXT:\n{json.dumps(request.user_context, ensure_ascii=False)}\n\n"
+        safe_user_ctx = sanitize_context(request.user_context)
+        system_prompt += f"USER PROFILE CONTEXT:\n{json.dumps(safe_user_ctx, ensure_ascii=False)}\n\n"
 
     # 4. Compact Verified Schemes Catalog
     catalog_lines = "\n".join([_format_compact_scheme(s) for s in SCHEMES_DATA])
@@ -209,7 +276,7 @@ async def generate_chat_response(request: ChatRequest) -> str:
 
     api_messages = [{"role": "system", "content": system_prompt}]
     for msg in request.messages:
-        api_messages.append({"role": msg.role, "content": msg.content})
+        api_messages.append({"role": msg.role, "content": mask_pii_text(msg.content)})
 
     headers = {
         "Authorization": f"Bearer {LLM_API_KEY}",
