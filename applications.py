@@ -1,21 +1,20 @@
-"""Applications router — CRUD for government scheme applications"""
+"""
+Applications router — Citizen application submission, tracking, and status management.
+Uses authoritative Firestore persistence only. Misleading in-memory fallbacks are eliminated.
+"""
 
-import os
 import uuid
 import logging
-from datetime import datetime
-from typing import Optional, Dict, Any
+from datetime import datetime, timezone
+from typing import Dict, Any, List
 
-from fastapi import APIRouter, HTTPException, Depends, status
-from schemas import ApplicationCreate, ApplicationResponse, StatusUpdate
+from fastapi import APIRouter, HTTPException, status, Depends
+from schemas import ApplicationCreate, StatusUpdate
 import firebase_service
 from core.security import get_current_user, get_current_admin_user
 
 router = APIRouter()
 logger = logging.getLogger("jansahayak.applications")
-
-# In-memory store (used as fallback when Firestore is not configured)
-_in_memory_store: dict = {}
 
 
 @router.post("/applications", response_model=dict, summary="Submit a new application")
@@ -27,30 +26,32 @@ async def create_application(
     Submit a new government service application.
     Requires an authenticated Firebase user.
     Authoritative identity is derived strictly from verified token UID.
+    Saves strictly to authoritative Firestore; fails closed with HTTP 503 if unavailable.
     """
     authenticated_uid = current_user["uid"]
     app_id = application.applicationId or f"APP-{uuid.uuid4().hex[:10].upper()}"
+    now_iso = datetime.now(timezone.utc).isoformat()
 
     data = {
         "applicationId": app_id,
         "serviceId": application.serviceId,
         "serviceName": application.serviceName,
         "formData": application.formData,
-        "userId": authenticated_uid,  # Authoritative identity
+        "userId": authenticated_uid,  # Authoritative identity from token
         "userEmail": current_user.get("email") or application.userEmail or "",
         "status": "submitted",
-        "submittedAt": datetime.utcnow().isoformat(),
+        "submittedAt": now_iso,
     }
 
-    doc_id = None
     try:
         doc_id = await firebase_service.create_application(data)
         data["id"] = doc_id
     except Exception as e:
-        logger.error("Failed to save application to Firestore (%s). Falling back to in-memory store.", type(e).__name__)
-        doc_id = str(uuid.uuid4())
-        data["id"] = doc_id
-        _in_memory_store[doc_id] = data
+        logger.error("Failed to save application to authoritative Firestore: %s", type(e).__name__)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Application submission service temporarily unavailable. Could not save to authoritative database. Please retry."
+        )
 
     logger.info("Application submitted successfully: %s by user %s", app_id, authenticated_uid[:8])
     return {
@@ -68,25 +69,18 @@ async def get_application(
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     """
-    Fetch a single application by its document ID.
+    Fetch a single application by its document ID or citizen applicationId.
     Requires ownership (application.userId == authenticated UID) or admin privileges.
     Fails closed with 404 to prevent ID enumeration.
     """
-    app = None
     try:
         app = await firebase_service.get_application_by_id(app_id)
     except Exception as e:
         logger.error("Error retrieving application %s from Firestore: %s", app_id, type(e).__name__)
-
-    # Check in-memory fallback
-    if not app:
-        if app_id in _in_memory_store:
-            app = _in_memory_store[app_id]
-        else:
-            for doc_id, item in _in_memory_store.items():
-                if item.get("applicationId") == app_id:
-                    app = item
-                    break
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database service unavailable"
+        )
 
     if not app:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Application not found")
@@ -112,7 +106,7 @@ async def get_user_applications(
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     """
-    Fetch all applications submitted by a specific user.
+    Fetch all applications submitted by a specific user from authoritative Firestore.
     Only the user themselves or an admin can access this endpoint.
     """
     is_owner = user_id == current_user["uid"]
@@ -129,14 +123,14 @@ async def get_user_applications(
             detail="Access denied: Cannot access applications of another user"
         )
 
-    apps = []
     try:
         apps = await firebase_service.get_user_applications(user_id)
     except Exception as e:
         logger.error("Error querying user applications from Firestore: %s", type(e).__name__)
-
-    if not apps:
-        apps = [a for a in _in_memory_store.values() if a.get("userId") == user_id]
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database service unavailable"
+        )
 
     return {"applications": apps, "count": len(apps)}
 
@@ -148,30 +142,21 @@ async def update_status(
     admin_user: Dict[str, Any] = Depends(get_current_admin_user)
 ):
     """
-    Update the status of an application.
+    Update the status of an application in authoritative Firestore.
     Requires admin privileges.
     Valid statuses: submitted, reviewing, approved, rejected
     """
-    updated = False
     try:
         updated = await firebase_service.update_application_status(app_id, status_update.status)
     except Exception as e:
         logger.error("Error updating status in Firestore for %s: %s", app_id, type(e).__name__)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database service unavailable"
+        )
 
-    if updated:
-        logger.info("Application %s status updated to '%s' by admin %s", app_id, status_update.status, admin_user["uid"][:8])
-        return {"success": True, "status": status_update.status}
+    if not updated:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Application not found")
 
-    # In-memory fallback
-    if app_id in _in_memory_store:
-        _in_memory_store[app_id]["status"] = status_update.status
-        _in_memory_store[app_id]["updatedAt"] = datetime.utcnow().isoformat()
-        return {"success": True, "status": status_update.status}
-
-    for doc_id, app in _in_memory_store.items():
-        if app.get("applicationId") == app_id:
-            app["status"] = status_update.status
-            app["updatedAt"] = datetime.utcnow().isoformat()
-            return {"success": True, "status": status_update.status}
-
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Application not found")
+    logger.info("Application %s status updated to '%s' by admin %s", app_id, status_update.status, admin_user["uid"][:8])
+    return {"success": True, "status": status_update.status}

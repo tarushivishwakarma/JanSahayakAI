@@ -235,30 +235,29 @@ async function submitForm() {
       body: JSON.stringify(applicationData)
     });
 
-    if (!resp.ok) throw new Error('Backend error ' + resp.status);
+    if (!resp.ok) {
+      const errJson = await resp.json().catch(() => null);
+      throw new Error(errJson?.detail || `Submission failed (status ${resp.status})`);
+    }
+
     const result = await resp.json();
     applicationData.applicationId = result.application_id || applicationData.applicationId;
+    applicationData.id = result.id || applicationData.applicationId;
+
+    // Clear saved draft on genuine backend success
+    clearOfflineProgress(currentServiceId);
+
+    if (onSubmitSuccessCb) onSubmitSuccessCb(applicationData);
 
   } catch (err) {
-    // Fallback: save to Firestore if available
-    if (window.firebaseReady && window.db && getCurrentUser()) {
-      try {
-        await window.db.collection('applications').add({
-          ...applicationData,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-      } catch (fbErr) {
-        console.warn('Firestore save failed:', fbErr);
-      }
-    }
-    // Always save to localStorage as offline backup
-    saveApplicationLocally(applicationData);
+    console.error('Application submission error:', err);
+    // Preserve typed inputs as draft so citizen does not lose data
+    saveOfflineProgress(currentServiceId, formData);
+    showToast(
+      err.message || 'Application could not be saved to the database. Please try again.',
+      'error'
+    );
   }
-
-  // Clear saved progress
-  clearOfflineProgress(currentServiceId);
-
-  if (onSubmitSuccessCb) onSubmitSuccessCb(applicationData);
 }
 
 // ——— Offline Support ———
