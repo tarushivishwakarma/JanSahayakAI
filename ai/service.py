@@ -216,59 +216,64 @@ async def generate_chat_response(request: ChatRequest) -> str:
         "Content-Type": "application/json"
     }
 
-    payload = {
-        "model": LLM_MODEL,
-        "messages": api_messages,
-        "temperature": 0.2
-    }
-
     base_url = LLM_BASE_URL.rstrip("/")
     endpoint = f"{base_url}/chat/completions"
 
-    # Retry up to 2 times for transient connection/DNS resets
+    # Candidate models to try in order of preference if primary experiences quota/availability issues
+    models_to_try = [LLM_MODEL]
+    for fallback in ["gemini-flash-lite-latest", "gemini-flash-latest"]:
+        if fallback not in models_to_try:
+            models_to_try.append(fallback)
+
     last_error = None
-    for attempt in range(2):
-        async with httpx.AsyncClient(timeout=35.0) as client:
-            try:
-                response = await client.post(endpoint, json=payload, headers=headers)
-                response.raise_for_status()
-                data = response.json()
+    for model_name in models_to_try:
+        payload = {
+            "model": model_name,
+            "messages": api_messages,
+            "temperature": 0.2
+        }
 
-                # Robust response extraction
-                if "choices" in data and len(data["choices"]) > 0:
-                    choice = data["choices"][0]
-                    message = choice.get("message", {})
-                    content = message.get("content", "")
-                    if content and content.strip():
-                        return content.strip()
+        for attempt in range(2):
+            async with httpx.AsyncClient(timeout=35.0) as client:
+                try:
+                    response = await client.post(endpoint, json=payload, headers=headers)
+                    response.raise_for_status()
+                    data = response.json()
 
-                # Handle non-OpenAI or Gemini raw format if returned
-                if "candidates" in data and len(data["candidates"]) > 0:
-                    candidate = data["candidates"][0]
-                    parts = candidate.get("content", {}).get("parts", [])
-                    text_parts = [p.get("text", "") for p in parts if p.get("text")]
-                    if text_parts:
-                        return "".join(text_parts).strip()
+                    # Robust response extraction
+                    if "choices" in data and len(data["choices"]) > 0:
+                        choice = data["choices"][0]
+                        message = choice.get("message", {})
+                        content = message.get("content", "")
+                        if content and content.strip():
+                            return content.strip()
 
-                raise ValueError("Empty or unexpected response structure from AI provider.")
-            except (httpx.RemoteProtocolError, httpx.ConnectError, httpx.TimeoutException) as e:
-                print(f"Transient connection error (attempt {attempt + 1}): {type(e).__name__}")
-                last_error = e
-                import asyncio
-                await asyncio.sleep(0.8)
-                continue
-            except httpx.HTTPStatusError as e:
-                if e.response.status_code == 429 and attempt == 0:
-                    print("Rate limit (429) encountered, backing off 2s...")
+                    # Handle non-OpenAI or Gemini raw format if returned
+                    if "candidates" in data and len(data["candidates"]) > 0:
+                        candidate = data["candidates"][0]
+                        parts = candidate.get("content", {}).get("parts", [])
+                        text_parts = [p.get("text", "") for p in parts if p.get("text")]
+                        if text_parts:
+                            return "".join(text_parts).strip()
+
+                    raise ValueError("Empty or unexpected response structure from AI provider.")
+                except (httpx.RemoteProtocolError, httpx.ConnectError, httpx.TimeoutException) as e:
+                    print(f"Transient connection error ({model_name} attempt {attempt + 1}): {type(e).__name__}")
                     last_error = e
                     import asyncio
-                    await asyncio.sleep(2.0)
+                    await asyncio.sleep(0.8)
                     continue
-                print(f"LLM API HTTP error: {e.response.status_code}")
-                raise Exception("AI service returned an error status.")
-
-            except Exception as e:
-                print(f"LLM API general error: {type(e).__name__} - {e}")
-                raise Exception("Failed to get response from AI service.")
+                except httpx.HTTPStatusError as e:
+                    if e.response.status_code in (404, 429, 503):
+                        print(f"Model {model_name} returned {e.response.status_code}, falling back to alternative model...")
+                        last_error = e
+                        break  # Fall back to next model candidate
+                    print(f"LLM API HTTP error ({model_name}): {e.response.status_code}")
+                    last_error = e
+                    break
+                except Exception as e:
+                    print(f"LLM API general error ({model_name}): {type(e).__name__} - {e}")
+                    last_error = e
+                    break
 
     raise Exception(f"Failed to get response from AI service: {last_error}")
