@@ -5,8 +5,11 @@ Initializes Firebase Admin once and provides helper functions.
 
 import os
 import json
+import logging
 from datetime import datetime
 from typing import Optional, List, Dict, Any
+
+logger = logging.getLogger("jansahayak.firebase")
 
 # Lazy import to avoid hard failure if firebase-admin is not installed
 try:
@@ -15,21 +18,31 @@ try:
     FIREBASE_AVAILABLE = True
 except ImportError:
     FIREBASE_AVAILABLE = False
-    print("⚠️  firebase-admin not installed. Install with: pip install firebase-admin")
+    logger.warning("firebase-admin not installed. Install with: pip install firebase-admin")
 
 _db = None  # Firestore client singleton
 
 
-def init_firebase():
+def is_initialized() -> bool:
+    """Return True if Firebase Admin is initialized with an active Firestore client."""
+    return bool(FIREBASE_AVAILABLE and firebase_admin._apps and _db is not None)
+
+
+def init_firebase() -> bool:
     """Initialize Firebase Admin SDK (call once on startup)"""
     global _db
 
     if not FIREBASE_AVAILABLE:
+        logger.warning("Firebase Admin unavailable: package not installed.")
         return False
 
     if firebase_admin._apps:
-        _db = fs.client()
-        return True
+        try:
+            _db = fs.client()
+            return True
+        except Exception as e:
+            logger.error("Error obtaining Firestore client from existing app: %s", e)
+            return False
 
     # Try JSON file path first
     sa_path = os.getenv("FIREBASE_SERVICE_ACCOUNT_PATH", "")
@@ -42,16 +55,16 @@ def init_firebase():
             sa_dict = json.loads(sa_json)
             cred = credentials.Certificate(sa_dict)
         else:
-            print("⚠️  Firebase credentials not configured. Running without Firestore.")
+            logger.warning("Firebase credentials not configured. Running without Firestore.")
             return False
 
         firebase_admin.initialize_app(cred)
         _db = fs.client()
-        print("✅ Firebase Admin initialized")
+        logger.info("Firebase Admin and Firestore initialized successfully")
         return True
 
     except Exception as e:
-        print(f"⚠️  Firebase init failed: {e}")
+        logger.error("Firebase initialization failed: %s", e)
         return False
 
 
