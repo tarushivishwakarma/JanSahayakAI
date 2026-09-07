@@ -22,8 +22,12 @@ logger = logging.getLogger("jansahayak.security")
 security_scheme = HTTPBearer(auto_error=False)
 
 def get_admin_emails() -> List[str]:
-    """Load and normalize admin emails from environment."""
-    raw = os.getenv("ADMIN_EMAILS", "admin@jansahayak.in,admin@test.com")
+    """
+    Load and normalize admin emails strictly from explicit configuration.
+    Fails closed (returns empty list) if ADMIN_EMAILS is unset or empty.
+    No development or test accounts are permitted as implicit admins.
+    """
+    raw = os.getenv("ADMIN_EMAILS", "")
     return [e.strip().lower() for e in raw.split(",") if e.strip()]
 
 

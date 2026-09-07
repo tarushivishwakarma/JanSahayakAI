@@ -8,7 +8,7 @@ import { getCurrentUser } from './auth.js';
 import { showToast } from './app.js';
 import { getBackendUrl, formatDate, escapeHtml, authFetch } from './utils.js';
 
-const ADMIN_EMAILS = ['admin@jansahayak.in', 'admin@test.com'];
+const ADMIN_EMAILS = ['admin@jansahayak.in'];
 
 export async function initAdmin() {
   const user = getCurrentUser();
