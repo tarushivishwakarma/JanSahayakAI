@@ -152,6 +152,8 @@ function setupNavbarListeners() {
   document.getElementById('lang-toggle')?.addEventListener('click', () => {
     toggleLang();
     applyTranslations();
+    // Update <html lang> for screen reader pronunciation
+    document.documentElement.lang = getLang() === 'hi' ? 'hi' : 'en';
     // Re-render service cards with new language (but don't re-bind landing buttons)
     import('./services.js').then(m => m.renderServiceCards?.());
   });
@@ -272,7 +274,13 @@ export function showToast(message, type = 'info') {
   const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
-  toast.setAttribute('role', 'alert');
+  if (type === 'error') {
+    toast.setAttribute('role', 'alert');
+    toast.setAttribute('aria-live', 'assertive');
+  } else {
+    toast.setAttribute('role', 'status');
+    toast.setAttribute('aria-live', 'polite');
+  }
   toast.innerHTML = `<span>${icons[type] || 'ℹ️'}</span><span>${message}</span>`;
   container.appendChild(toast);
 

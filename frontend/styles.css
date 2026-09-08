@@ -614,8 +614,8 @@ ul { list-style: none; }
 .track-date { font-size: 0.8rem; color: var(--color-text-muted); text-align: right; }
 
 /* ---------- Admin Dashboard ---------- */
-.admin-table-wrap { overflow-x: auto; border-radius: var(--radius-lg); border: 1px solid var(--border); }
-.admin-table { width: 100%; border-collapse: collapse; }
+.admin-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: var(--radius-lg); border: 1px solid var(--border); }
+.admin-table { width: 100%; min-width: 620px; border-collapse: collapse; }
 .admin-table th {
   padding: 0.75rem 1rem;
   text-align: left;
