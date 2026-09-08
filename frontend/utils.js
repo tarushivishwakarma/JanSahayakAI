@@ -113,8 +113,8 @@ export async function getOrInitAuthUser() {
     const cred = await window.auth.signInAnonymously();
     return cred.user;
   } catch (err) {
-    // If anonymous auth is disabled in Firebase console, log cleanly and return null
-    console.warn('Firebase anonymous authentication unavailable:', err.code || err.message);
+    // Log only safe error code, never sensitive message details or tokens
+    console.warn('Firebase anonymous authentication unavailable:', err.code || 'AUTH_UNAVAILABLE');
     return null;
   }
 }
@@ -129,18 +129,19 @@ export async function getAuthToken(forceRefresh = false) {
       return await user.getIdToken(forceRefresh);
     }
   } catch (err) {
-    console.warn('Error fetching Firebase ID token:', err);
+    console.warn('Error fetching Firebase ID token:', err.code || 'TOKEN_FETCH_ERROR');
   }
   return null;
 }
 
 /**
- * Authenticated fetch wrapper.
+ * Authenticated fetch wrapper with integrated timeout support.
  * Automatically injects Authorization Bearer header with Firebase ID token.
- * Preserves custom options, body, headers, and credentials.
+ * Defaults to 30-second timeout unless caller specifies custom timeout or signal.
  */
 export async function authFetch(url, options = {}) {
-  const opts = { ...options };
+  const { timeout, signal, ...restOpts } = options;
+  const opts = { ...restOpts };
   opts.headers = { ...(opts.headers || {}) };
 
   try {
@@ -149,8 +150,48 @@ export async function authFetch(url, options = {}) {
       opts.headers['Authorization'] = `Bearer ${token}`;
     }
   } catch (err) {
-    console.warn('Could not attach authorization token to request:', err);
+    console.warn('Could not attach authorization token to request:', err.code || 'AUTH_ATTACH_ERROR');
   }
 
-  return fetch(url, opts);
+  // Determine timeout duration: explicit timeout, or 30s default if no caller signal provided
+  const timeoutMs = timeout !== undefined ? timeout : (signal ? 0 : 30000);
+
+  if (timeoutMs <= 0 && signal) {
+    opts.signal = signal;
+    return fetch(url, opts);
+  }
+
+  const controller = new AbortController();
+  let timerId = null;
+
+  if (signal) {
+    if (signal.aborted) {
+      controller.abort();
+    } else {
+      signal.addEventListener('abort', () => controller.abort());
+    }
+  }
+
+  if (timeoutMs > 0) {
+    timerId = setTimeout(() => {
+      controller.abort();
+    }, timeoutMs);
+  }
+
+  opts.signal = controller.signal;
+
+  try {
+    const resp = await fetch(url, opts);
+    return resp;
+  } catch (err) {
+    if (controller.signal.aborted && !signal?.aborted) {
+      const timeoutErr = new Error(`Request timed out after ${timeoutMs}ms`);
+      timeoutErr.name = 'TimeoutError';
+      timeoutErr.isTimeout = true;
+      throw timeoutErr;
+    }
+    throw err;
+  } finally {
+    if (timerId) clearTimeout(timerId);
+  }
 }
