@@ -1,3 +1,4 @@
+import logging
 from typing import Dict, Any
 from fastapi import APIRouter, HTTPException, Depends
 from core.security import get_current_user, check_llm_rate_limit
@@ -5,6 +6,8 @@ from .schemas import ChatRequest
 from .service import generate_chat_response
 
 router = APIRouter()
+logger = logging.getLogger("jansahayak.ai.router")
+
 
 @router.post("/chat")
 async def chat_endpoint(
@@ -22,6 +25,6 @@ async def chat_endpoint(
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Chat endpoint error: {type(e).__name__} - {e}")
+        logger.error("Chat endpoint unhandled error: %s", type(e).__name__)
         raise HTTPException(status_code=500, detail="Failed to get response from AI service.")
 

@@ -57,7 +57,14 @@ def sanitize_url(url: Optional[str]) -> str:
 
 
 class SlidingWindowRateLimiter:
-    """Thread-safe in-memory sliding window rate limiter per user key."""
+    """
+    Thread-safe in-memory sliding window rate limiter per user key.
+    Enforces per-user request thresholds (default: 15 req/min).
+
+    Architecture note:
+    This rate limiter is process-local. In multi-worker or horizontal scaling
+    deployments, a distributed store such as Redis is required for shared state.
+    """
 
     def __init__(self):
         self._lock = threading.Lock()
@@ -67,9 +74,17 @@ class SlidingWindowRateLimiter:
         """
         Enforces a sliding window rate limit.
         Raises HTTP 429 when the limit is exceeded.
+        Cleans stale entries to prevent unbounded memory growth.
         """
         now = time.time()
         with self._lock:
+            # Active cleanup of expired entries when tracking more than 100 users
+            if len(self._requests) > 100:
+                cutoff = now - window_seconds
+                stale_keys = [k for k, ts in self._requests.items() if not ts or ts[-1] <= cutoff]
+                for k in stale_keys:
+                    del self._requests[k]
+
             timestamps = self._requests.get(key, [])
             # Prune records outside the sliding window
             valid_timestamps = [t for t in timestamps if t > now - window_seconds]
@@ -93,6 +108,7 @@ class SlidingWindowRateLimiter:
 
             valid_timestamps.append(now)
             self._requests[key] = valid_timestamps
+
 
 
 # Global rate limiter instance for LLM requests

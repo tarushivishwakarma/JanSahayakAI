@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import re
 from typing import Any, Dict, List
@@ -8,14 +9,17 @@ from .schemas import ChatRequest
 from core.eligibility import evaluate_all_schemes
 from core.ai_validator import validate_ai_response
 
-# Load schemes data once to keep in memory for reference
+logger = logging.getLogger("jansahayak.ai")
+
+# Load schemes data once at module import; log failures with structured logger
 SCHEMES_DATA = []
 try:
     schemes_path = os.path.join(os.path.dirname(__file__), "..", "schemes.json")
     with open(schemes_path, "r", encoding="utf-8") as f:
         SCHEMES_DATA = json.load(f)
+    logger.info("AI service: loaded %d schemes for LLM grounding", len(SCHEMES_DATA))
 except Exception as e:
-    print(f"Warning: Could not load schemes data for LLM service: {e}")
+    logger.error("AI service: could not load schemes.json for LLM grounding: %s", type(e).__name__)
 
 
 def mask_pii_text(text: str) -> str:
@@ -286,7 +290,7 @@ async def generate_chat_response(request: ChatRequest) -> str:
                 "and ask for the missing criteria before stating eligibility.\n\n"
             )
         except Exception as e:
-            print(f"Warning: Could not pre-evaluate scheme eligibility for AI prompt: {e}\n\n")
+            logger.warning("AI: could not pre-evaluate scheme eligibility for prompt grounding: %s", type(e).__name__)
 
     # 4. Compact Verified Schemes Catalog
     catalog_lines = "\n".join([_format_compact_scheme(s) for s in SCHEMES_DATA])
@@ -345,21 +349,21 @@ async def generate_chat_response(request: ChatRequest) -> str:
 
                     raise ValueError("Empty or unexpected response structure from AI provider.")
                 except (httpx.RemoteProtocolError, httpx.ConnectError, httpx.TimeoutException) as e:
-                    print(f"Transient connection error ({model_name} attempt {attempt + 1}): {type(e).__name__}")
+                    logger.warning("AI: transient connection error (%s attempt %d): %s", model_name, attempt + 1, type(e).__name__)
                     last_error = e
                     import asyncio
                     await asyncio.sleep(0.8)
                     continue
                 except httpx.HTTPStatusError as e:
                     if e.response.status_code in (404, 429, 503):
-                        print(f"Model {model_name} returned {e.response.status_code}, falling back to alternative model...")
+                        logger.warning("AI: model %s returned HTTP %d, trying fallback model", model_name, e.response.status_code)
                         last_error = e
                         break  # Fall back to next model candidate
-                    print(f"LLM API HTTP error ({model_name}): {e.response.status_code}")
+                    logger.error("AI: LLM API HTTP error (%s): %d", model_name, e.response.status_code)
                     last_error = e
                     break
                 except Exception as e:
-                    print(f"LLM API general error ({model_name}): {type(e).__name__} - {e}")
+                    logger.error("AI: LLM API general error (%s): %s", model_name, type(e).__name__)
                     last_error = e
                     break
 

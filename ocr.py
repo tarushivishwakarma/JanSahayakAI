@@ -61,21 +61,22 @@ async def extract_ocr(file: UploadFile = File(...)):
     Supported formats: JPG, PNG, WebP (Images only)
     Maximum size: 5MB
     """
-    # 1. Validate declared client MIME type
+    # 1. Validate declared client MIME type (cheap — before any I/O)
     if file.content_type not in ALLOWED_CONTENT_TYPES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Unsupported content type: {file.content_type}. Allowed formats: {', '.join(sorted(ALLOWED_CONTENT_TYPES))}"
         )
 
-    # 2. Read file bytes
-    file_bytes = await file.read()
+    # 2. Read file bytes — bounded to MAX_FILE_SIZE+1 so we detect oversize before allocating more
+    file_bytes = await file.read(MAX_FILE_SIZE + 1)
 
-    # 3. Validate file size
+    # 3. Validate file size before expensive processing
     if len(file_bytes) > MAX_FILE_SIZE:
+        logger.warning("OCR: rejected oversized upload: %d bytes from file '%s'", len(file_bytes), file.filename or "<unknown>")
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail=f"File too large. Maximum size is {MAX_FILE_SIZE // (1024*1024)}MB"
+            detail=f"File too large. Maximum size is {MAX_FILE_SIZE // (1024*1024)}MB."
         )
 
     # 4. Server-side magic byte and integrity validation
