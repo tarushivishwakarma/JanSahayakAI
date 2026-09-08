@@ -113,11 +113,14 @@ function renderStep() {
     `;
   }
 
-  const isLast = currentStepIndex === steps.length - 1;
+  const isSelect = step.type === 'select' && step.options;
+  const labelElement = isSelect
+    ? `<p class="wizard-question">${escapeHtml(step.question)}</p>`
+    : `<label for="wizard-input" class="wizard-question" style="display:block">${escapeHtml(step.question)}</label>`;
 
   container.innerHTML = `
     <div class="wizard-step">
-      <p class="wizard-question">${escapeHtml(step.question)}</p>
+      ${labelElement}
       ${step.hint ? `<p class="wizard-hint">${escapeHtml(step.hint)}</p>` : ''}
 
       ${inputHtml}
@@ -178,6 +181,9 @@ function goToNextStep() {
     currentStepIndex++;
     renderStep();
   } else {
+    // Guard against double-submit
+    const submitBtn = document.getElementById('wizard-next');
+    if (submitBtn && submitBtn.disabled) return;
     submitForm();
   }
 }
@@ -215,6 +221,15 @@ function validateStep(step, value) {
 
 async function submitForm() {
   const user = getCurrentUser();
+
+  // Disable submit button immediately to prevent double-submission
+  const submitBtn = document.getElementById('wizard-next');
+  const originalBtnText = submitBtn ? submitBtn.innerHTML : '';
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `<span class="spinner" style="width:1rem;height:1rem;margin-right:0.5rem;display:inline-block"></span> Submitting…`;
+  }
+
   const applicationData = {
     serviceId: currentServiceId,
     serviceName: t('wizardServices')[currentServiceId]?.name || currentServiceId,
@@ -226,37 +241,52 @@ async function submitForm() {
     applicationId: 'APP-' + Date.now()
   };
 
+  // 30-second timeout for cold-start Render instances
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
+
   try {
     // Save to backend API using authenticated fetch
     const backendUrl = getBackendUrl();
     const resp = await authFetch(`${backendUrl}/api/applications`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(applicationData)
+      body: JSON.stringify(applicationData),
+      signal: controller.signal
     });
+    clearTimeout(timeoutId);
 
     if (!resp.ok) {
       const errJson = await resp.json().catch(() => null);
-      throw new Error(errJson?.detail || `Submission failed (status ${resp.status})`);
+      const statusMsg = resp.status === 401 ? 'Session expired. Please log in again.'
+        : resp.status === 503 ? 'Server temporarily unavailable. Your draft has been saved.'
+        : errJson?.detail || `Submission failed (status ${resp.status})`;
+      throw new Error(statusMsg);
     }
 
     const result = await resp.json();
     applicationData.applicationId = result.application_id || applicationData.applicationId;
     applicationData.id = result.id || applicationData.applicationId;
 
-    // Clear saved draft on genuine backend success
+    // Clear saved draft ONLY after confirmed backend success
     clearOfflineProgress(currentServiceId);
 
     if (onSubmitSuccessCb) onSubmitSuccessCb(applicationData);
 
   } catch (err) {
+    clearTimeout(timeoutId);
     console.error('Application submission error:', err);
+    // Re-enable button so user can retry
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = originalBtnText;
+    }
     // Preserve typed inputs as draft so citizen does not lose data
     saveOfflineProgress(currentServiceId, formData);
-    showToast(
-      err.message || 'Application could not be saved to the database. Please try again.',
-      'error'
-    );
+    const userMsg = err.name === 'AbortError'
+      ? 'Request timed out. Your draft has been saved. Please try again.'
+      : err.message || 'Application could not be saved to the database. Please try again.';
+    showToast(userMsg, 'error');
   }
 }
 
