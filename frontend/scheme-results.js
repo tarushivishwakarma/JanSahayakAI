@@ -4,7 +4,7 @@
  */
 
 import { t, getLang } from './i18n.js';
-import { getBackendUrl, escapeHtml, sanitizeUrl } from './utils.js';
+import { getBackendUrl, escapeHtml, sanitizeUrl, authFetch } from './utils.js';
 
 let schemesData = [];
 let currentUserData = null;
@@ -26,8 +26,12 @@ export function initSchemeResults({ onBack }) {
 async function loadSchemes() {
   try {
     const backendUrl = getBackendUrl();
-    const res = await fetch(`${backendUrl}/api/schemes`);
-    schemesData = await res.json();
+    const res = await authFetch(`${backendUrl}/api/schemes`, { timeout: 15000 });
+    if (res.ok) {
+      schemesData = await res.json();
+    } else {
+      console.error('Failed to load schemes catalog: HTTP', res.status);
+    }
   } catch (e) {
     console.error('Failed to load schemes:', e);
     schemesData = [];
@@ -37,18 +41,23 @@ async function loadSchemes() {
 // ——— Render Results (called from app.js) ———
 export async function renderResults(userData) {
   currentUserData = userData;
-  // If schemes haven't loaded yet, load them
+  showResultsView();
+
+  const container = document.getElementById('scheme-cards-container');
+  if (container) {
+    container.innerHTML = `
+      <div style="grid-column:1/-1;text-align:center;padding:3rem">
+        <div class="spinner" style="margin:0 auto"></div>
+        <p style="margin-top:1rem;color:var(--color-text-muted)">Evaluating scheme eligibility with verified government rules...</p>
+      </div>`;
+  }
+
+  // Ensure schemes data catalog is loaded
   if (!schemesData || schemesData.length === 0) {
     await loadSchemes();
   }
 
-  // 1. Instant deterministic client-side evaluation
-  matchedSchemes = filterSchemes(userData);
-  showResultsView();
-  renderSchemeCards();
-  updateResultsHeader();
-
-  // 2. Query authoritative backend evaluation endpoint
+  // Authoritative backend deterministic evaluation (sole source of truth)
   try {
     const backendUrl = getBackendUrl();
     const evalPayload = {
@@ -69,69 +78,58 @@ export async function renderResults(userData) {
       isRegisteredProfessional: Boolean(userData.isRegisteredProfessional)
     };
 
-    const res = await fetch(`${backendUrl}/api/schemes/evaluate`, {
+    const res = await authFetch(`${backendUrl}/api/schemes/evaluate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(evalPayload)
+      body: JSON.stringify(evalPayload),
+      timeout: 15000
     });
 
-    if (res.ok) {
-      const evalData = await res.json();
-      if (evalData && Array.isArray(evalData.results)) {
-        const resultMap = new Map(evalData.results.map(r => [r.scheme_id, r]));
-        // Filter schemesData based on authoritative status
-        const authoritativeMatched = [];
-        schemesData.forEach(scheme => {
-          const evalResult = resultMap.get(scheme.id);
-          if (evalResult && evalResult.status === 'ELIGIBLE') {
-            const enriched = { ...scheme, evaluationReasons: evalResult.reasons };
-            authoritativeMatched.push(enriched);
-          }
-        });
-        matchedSchemes = authoritativeMatched;
-        renderSchemeCards();
-        updateResultsHeader();
-      }
+    if (!res.ok) {
+      throw new Error(`Evaluation service returned HTTP ${res.status}`);
     }
+
+    const evalData = await res.json();
+    if (evalData && Array.isArray(evalData.results)) {
+      const resultMap = new Map(evalData.results.map(r => [r.scheme_id, r]));
+      // Match schemes based purely on authoritative backend status
+      const authoritativeMatched = [];
+      schemesData.forEach(scheme => {
+        const evalResult = resultMap.get(scheme.id);
+        if (evalResult && evalResult.status === 'ELIGIBLE') {
+          const enriched = { ...scheme, evaluationReasons: evalResult.reasons };
+          authoritativeMatched.push(enriched);
+        }
+      });
+      matchedSchemes = authoritativeMatched;
+      renderSchemeCards();
+      updateResultsHeader();
+      return;
+    }
+    throw new Error('Malformed evaluation response');
   } catch (err) {
-    console.warn('Authoritative evaluation endpoint unreachable; using client deterministic rules:', err);
+    console.error('Authoritative evaluation failed:', err);
+    matchedSchemes = [];
+    updateResultsHeader();
+    if (container) {
+      const isTimeout = err.name === 'TimeoutError' || err.isTimeout;
+      const msg = isTimeout
+        ? 'Eligibility check timed out. Please verify your connection and try again.'
+        : 'Authoritative eligibility service is temporarily unavailable. Please try again.';
+      container.innerHTML = `
+        <div class="empty-state" style="grid-column:1/-1">
+          <div class="icon">⚠️</div>
+          <h3>Eligibility Service Unavailable</h3>
+          <p>${escapeHtml(msg)}</p>
+          <button id="retry-eval-btn" class="btn btn-primary btn-sm" style="margin-top:1rem">Try Again</button>
+        </div>`;
+      document.getElementById('retry-eval-btn')?.addEventListener('click', () => {
+        renderResults(userData);
+      });
+    }
   }
 }
 
-/** Client-side deterministic matching logic mirroring core/eligibility.py */
-function filterSchemes(userData) {
-  return schemesData.filter(scheme => {
-    // PM Kisan (Scheme 1): Requires farmer occupation and verified cultivable land ownership
-    if (scheme.id === 1) {
-      const isFarmer = userData.occupation === 'Farmer' || userData.occupation === 'किसान';
-      const ownsLand = (userData.ownsCultivableLand === true || userData.ownsCultivableLand === 'true' || userData.ownsCultivableLand === 'yes');
-      const hasExclusion = Boolean(
-        userData.isInstitutionalLandholder ||
-        userData.isConstitutionalPostHolder ||
-        userData.isGovernmentEmployee ||
-        userData.monthlyPensionGte10k ||
-        userData.isIncomeTaxPayer ||
-        userData.isRegisteredProfessional
-      );
-      if (!isFarmer || !ownsLand || hasExclusion) {
-        return false;
-      }
-    }
-
-    const stateMatch = scheme.state === 'All' || scheme.state === userData.state;
-    const incomeMatch = userData.income >= scheme.minIncome && userData.income <= scheme.maxIncome;
-    const ageMatch = userData.age >= scheme.minAge && userData.age <= scheme.maxAge;
-    const categoryMatch = scheme.socialCategory.includes(userData.category || userData.socialCategory);
-    const occupationMatch = scheme.occupation.includes('All') || scheme.occupation.includes(userData.occupation);
-    const genderMatch = scheme.gender === 'All' || scheme.gender === userData.gender;
-    const disabilityMatch = scheme.disability === 'Any'
-      || (scheme.disability === 'Yes' && (userData.disability === 'Yes' || userData.disability === true))
-      || (scheme.disability === 'No' && (userData.disability === 'No' || userData.disability === false));
-    const maritalMatch = !scheme.maritalStatus || scheme.maritalStatus === userData.maritalStatus;
-
-    return stateMatch && incomeMatch && ageMatch && categoryMatch && occupationMatch && genderMatch && disabilityMatch && maritalMatch;
-  });
-}
 
 function updateResultsHeader() {
   const matchText = document.getElementById('results-match-text');
