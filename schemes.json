@@ -33,7 +33,7 @@
     "officialEligibility": "Landholder farmer families who own cultivable land in their names as per state/UT land records. Subject to exclusion categories (institutional landholders, constitutional post holders, current/former ministers, government employees, pensioners with monthly pension ≥ ₹10,000, income tax payers, registered professionals).",
     "officialEligibilityHi": "वे भूमिधारक किसान परिवार जिनके नाम पर कृषि योग्य भूमि है। संस्थागत भूमिधारक, संवैधानिक पद धारक, मंत्री, सरकारी कर्मचारी, ₹10,000 से अधिक मासिक पेंशनभोगी, आयकरदाता और पंजीकृत पेशेवर इसके पात्र नहीं हैं।",
     "officialAge": "Not specified in official source (benefit is for landholder farmer family)",
-    "officialIncome": "Not specified in official source (no income ceiling; subject to exclusion categories)",
+    "officialIncome": "Not specified in official source (no income ceiling; subject to exclusion categories). maxIncome sentinel 10,000,000 used — engine treats this as no upper bound.",
     "officialDisability": "Not specified in official source (eligible regardless of disability status)",
     "exclusions": [
       "Institutional landholders",
@@ -53,7 +53,7 @@
     "category": "Central",
     "state": "All",
     "minIncome": 0,
-    "maxIncome": 300000,
+    "maxIncome": 10000000,
     "occupation": [
       "All"
     ],
@@ -68,8 +68,8 @@
     ],
     "benefit": "₹5 lakh health cover/family/year",
     "benefitHi": "₹5 लाख स्वास्थ्य कवर/परिवार/वर्ष",
-    "description": "Cashless secondary and tertiary hospitalization cover for low-income & vulnerable families",
-    "descriptionHi": "निम्न आय और कमजोर परिवारों के लिए कैशलेस अस्पताल भर्ती स्वास्थ्य कवर",
+    "description": "Cashless secondary and tertiary hospitalization cover for families identified under SECC 2011 deprivation criteria and NFSA beneficiary lists. Senior citizens aged 70+ covered separately under Ayushman Vay Vandana Card.",
+    "descriptionHi": "SECC 2011 और NFSA के आधार पर चिन्हित परिवारों के लिए कैशलेस अस्पताल भर्ती। 70 वर्ष+ नागरिकों के लिए अलग आयुष्मान वय वंदना कार्ड।",
     "documents": [
       "Aadhaar Card",
       "Ration Card",
@@ -77,10 +77,10 @@
     ],
     "applyLink": "https://pmjay.gov.in",
     "disability": "Any",
-    "officialEligibility": "Deprived and vulnerable families identified based on SECC 2011 deprivation criteria and expanded NFSA / State beneficiary lists. Also covers all senior citizens aged 70+ under Ayushman Vay Vandana Card regardless of income.",
-    "officialEligibilityHi": "SECC 2011 और NFSA के आधार पर चिन्हित वंचित परिवार। 70 वर्ष या उससे अधिक आयु के सभी वरिष्ठ नागरिक भी पात्र हैं।",
+    "officialEligibility": "Deprived and vulnerable families identified based on SECC 2011 deprivation criteria and expanded NFSA / State beneficiary lists. Also covers all senior citizens aged 70+ under Ayushman Vay Vandana Card regardless of income. Eligibility is NOT determined by a flat income ceiling.",
+    "officialEligibilityHi": "SECC 2011 और NFSA के आधार पर चिन्हित वंचित परिवार। 70 वर्ष या उससे अधिक आयु के सभी वरिष्ठ नागरिक भी पात्र हैं। पात्रता किसी निश्चित आय सीमा पर आधारित नहीं है।",
     "officialAge": "Not specified in official source (family coverage for all ages; 70+ under Vay Vandana)",
-    "officialIncome": "Not specified in official source (eligibility based on SECC deprivation / NFSA status, not a flat income cap)",
+    "officialIncome": "No flat income ceiling. Eligibility based on SECC 2011 deprivation criteria and NFSA status. maxIncome sentinel 10,000,000 used — engine treats this as no upper bound. CORRECTION: Previous value of 300,000 was incorrect (no official ₹3L cap exists). Source: pmjay.gov.in / NHA.",
     "officialDisability": "Not specified in official source (eligible regardless of disability status)",
     "officialSource": "https://pmjay.gov.in (National Health Authority, Ministry of Health and Family Welfare)"
   },
@@ -249,7 +249,7 @@
     "category": "Central",
     "state": "All",
     "minIncome": 0,
-    "maxIncome": 1800000,
+    "maxIncome": 900000,
     "occupation": [
       "All"
     ],
@@ -262,8 +262,8 @@
       "SC",
       "ST"
     ],
-    "benefit": "Financial assistance up to ₹1.2-2.67 lakh",
-    "benefitHi": "₹1.2-2.67 लाख तक की वित्तीय सहायता",
+    "benefit": "Financial assistance up to ₹1.2-2.5 lakh (rural) or interest subsidy/BLC up to ₹2.5 lakh (urban)",
+    "benefitHi": "₹1.2-2.5 लाख तक की वित्तीय सहायता (ग्रामीण) या ₹2.5 लाख तक ब्याज अनुदान/बीएलसी (शहरी)",
     "description": "Affordable housing assistance for homeless families and kutcha house dwellers",
     "descriptionHi": "बेघर परिवारों और कच्चे मकानों में रहने वालों के लिए किफायती आवास सहायता",
     "documents": [
@@ -274,10 +274,10 @@
     ],
     "applyLink": "https://pmaymis.gov.in",
     "disability": "Any",
-    "officialEligibility": "Beneficiary family must not own a pucca (permanent) house in any part of India. Classified into EWS (income up to ₹3 lakh), LIG (₹3–6 lakh), and rural houseless / kutcha house dwellers under SECC/Awas+.",
-    "officialEligibilityHi": "लाभार्थी परिवार के पास भारत में कहीं भी पक्का मकान नहीं होना चाहिए। ईडब्ल्यूएस (₹3 लाख तक), एलआईजी और ग्रामीण बेघर परिवार।",
+    "officialEligibility": "Beneficiary family must not own a pucca (permanent) house in any part of India. Classified into EWS (income up to ₹3 lakh), LIG (₹3–6 lakh), and MIG (₹6–9 lakh) under urban component; rural houseless / kutcha house dwellers under SECC/Awas+.",
+    "officialEligibilityHi": "लाभार्थी परिवार के पास भारत में कहीं भी पक्का मकान नहीं होना चाहिए। ईडब्ल्यूएस (₹3 लाख तक), एलआईजी (₹3-6 लाख), एमआईजी (₹6-9 लाख) और ग्रामीण बेघर परिवार।",
     "officialAge": "Not specified in official source (must be adult head/earning member of the family)",
-    "officialIncome": "EWS: ≤ ₹3 lakh/year; LIG: ₹3-6 lakh/year; Rural: based on deprivation/kutcha house criteria",
+    "officialIncome": "EWS: ≤ ₹3 lakh/year; LIG: ₹3-6 lakh/year; MIG: ₹6-9 lakh/year (urban). Rural: based on deprivation/kutcha house criteria. CORRECTION: maxIncome updated to 900,000 (MIG ceiling ₹9L under PMAY-U 2.0). Previous value of 1,800,000 had no basis in official guidelines. Source: pmay-urban.gov.in / pmayg.nic.in.",
     "officialDisability": "Not specified in official source (preference given in ground floor allocations)",
     "officialSource": "https://pmaymis.gov.in / https://pmayg.nic.in (Ministry of Housing and Urban Affairs & Ministry of Rural Development)"
   },
@@ -333,7 +333,7 @@
       "Worker"
     ],
     "minAge": 18,
-    "maxAge": 65,
+    "maxAge": 120,
     "gender": "All",
     "socialCategory": [
       "General",
@@ -341,8 +341,8 @@
       "SC",
       "ST"
     ],
-    "benefit": "Collateral-free business loan up to ₹10-20 lakh",
-    "benefitHi": "₹10-20 लाख तक का बिना गारंटी व्यापार ऋण",
+    "benefit": "Collateral-free business loan up to ₹10 lakh (Tarun); up to ₹20 lakh (Tarun Plus for repeat borrowers)",
+    "benefitHi": "₹10 लाख तक का बिना गारंटी व्यापार ऋण (तरुण); दोबारा ऋणी के लिए ₹20 लाख तक (तरुण प्लस)",
     "description": "Collateral-free institutional credit for micro and small business enterprises",
     "descriptionHi": "सूक्ष्म और लघु व्यवसाय उद्यमों के लिए संपार्श्विक-मुक्त संस्थागत ऋण",
     "documents": [
@@ -355,7 +355,7 @@
     "disability": "Any",
     "officialEligibility": "Any Indian citizen with a business proposal for a non-farm income-generating micro/small enterprise in manufacturing, trading, or service sectors.",
     "officialEligibilityHi": "विनिर्माण, व्यापार या सेवा क्षेत्रों में गैर-कृषि आय सृजन करने वाले सूक्ष्म/लघु उद्यम के लिए कोई भी भारतीय नागरिक।",
-    "officialAge": "Minimum 18 years (no statutory upper age limit in central guidelines)",
+    "officialAge": "Minimum 18 years. No statutory upper age limit in central guidelines. CORRECTION: maxAge updated from 65 to 120 (no upper limit sentinel). Source: mudra.org.in / Department of Financial Services.",
     "officialIncome": "Not specified in official source (no income ceiling; loan is for micro/small businesses)",
     "officialDisability": "Not specified in official source",
     "officialSource": "https://www.mudra.org.in (Department of Financial Services, Ministry of Finance)"
@@ -380,8 +380,8 @@
       "SC",
       "ST"
     ],
-    "benefit": "₹25,000 in 6 phased installments",
-    "benefitHi": "6 चरणों में ₹25,000 की वित्तीय सहायता",
+    "benefit": "₹25,000 in 6 phased installments (revised April 2024: ₹5,000 birth + ₹2,000 vaccination + ₹3,000 Class 1 + ₹3,000 Class 6 + ₹5,000 Class 9 + ₹7,000 Class 10/12 or degree entry)",
+    "benefitHi": "6 चरणों में ₹25,000 की वित्तीय सहायता (अप्रैल 2024 से संशोधित)",
     "description": "Conditional financial support for girl children in UP from birth to higher education",
     "descriptionHi": "जन्म से लेकर उच्च शिक्षा तक उत्तर प्रदेश में बालिकाओं के लिए वित्तीय सहायता",
     "documents": [
@@ -501,10 +501,10 @@
       "SC",
       "ST"
     ],
-    "benefit": "10 kg free food grains per person/month",
-    "benefitHi": "प्रति व्यक्ति 10 किलोग्राम मुफ्त खाद्यान्न प्रति माह",
-    "description": "Free food grains / DBT cash support for BPL and Antyodaya households in Karnataka",
-    "descriptionHi": "कर्नाटक में बीपीएल और अंत्योदय परिवारों के लिए मुफ्त खाद्यान्न / डीबीटी नकद सहायता",
+    "benefit": "10 kg free food grains per person/month (5 kg central NFSA + 5 kg state supplement)",
+    "benefitHi": "प्रति व्यक्ति 10 किलोग्राम मुफ्त खाद्यान्न प्रति माह (5 किलो केंद्रीय NFSA + 5 किलो राज्य)",
+    "description": "Free food grains for BPL and Antyodaya households in Karnataka via Fair Price Shops. Note: DBT cash component was discontinued in February 2025; distribution is now entirely through physical grain at ration shops.",
+    "descriptionHi": "कर्नाटक में बीपीएल और अंत्योदय परिवारों के लिए उचित मूल्य की दुकानों से मुफ्त खाद्यान्न। नोट: फरवरी 2025 में DBT नकद घटक बंद किया गया; अब वितरण पूरी तरह अनाज के रूप में।",
     "documents": [
       "BPL / AAY Ration Card",
       "Aadhaar Card (Aadhaar-seeded bank account)"
@@ -516,7 +516,7 @@
     "officialAge": "Not specified in official source (covers all members of the household)",
     "officialIncome": "BPL / Antyodaya ration cardholder status",
     "officialDisability": "Not specified in official source",
-    "officialSource": "https://ahara.kar.nic.in (Food, Civil Supplies & Consumer Affairs Department, Government of Karnataka)"
+    "officialSource": "https://ahara.kar.nic.in (Food, Civil Supplies & Consumer Affairs Department, Government of Karnataka). CORRECTION: Description updated to remove reference to DBT cash support, which was discontinued in February 2025."
   },
   {
     "id": 14,
@@ -531,7 +531,7 @@
       "Worker"
     ],
     "minAge": 18,
-    "maxAge": 65,
+    "maxAge": 120,
     "gender": "All",
     "socialCategory": [
       "General",
@@ -554,7 +554,7 @@
     "disability": "Any",
     "officialEligibility": "SC/ST borrowers and/or Women entrepreneurs (of any social category) aged 18+ establishing a greenfield project in manufacturing, services, agri-allied, or trading.",
     "officialEligibilityHi": "18 वर्ष से अधिक आयु के SC/ST और/या महिला उद्यमी जो विनिर्माण, सेवा, व्यापार में पहला उद्यम स्थापित कर रहे हों।",
-    "officialAge": "18 years and above",
+    "officialAge": "18 years and above. No statutory upper age limit in scheme guidelines. CORRECTION: maxAge updated from 65 to 120 (no upper limit sentinel). Source: standupmitra.in / Department of Financial Services.",
     "officialIncome": "Not specified in official source (no income ceiling; for bank credit)",
     "officialDisability": "Not specified in official source",
     "officialSource": "https://www.standupmitra.in (Department of Financial Services, Ministry of Finance)"
@@ -604,7 +604,7 @@
     "category": "Central",
     "state": "All",
     "minIncome": 0,
-    "maxIncome": 500000,
+    "maxIncome": 10000000,
     "occupation": [
       "Worker",
       "Trader"
@@ -629,10 +629,10 @@
     ],
     "applyLink": "https://www.npscra.nsdl.co.in",
     "disability": "Any",
-    "officialEligibility": "All Indian citizens aged 18 to 40 years holding a savings bank or post office account. Any citizen who is or has been an Income-Tax payer is not eligible to join (effective 1 Oct 2022).",
+    "officialEligibility": "All Indian citizens aged 18 to 40 years holding a savings bank or post office account. Any citizen who is or has been an Income-Tax payer is not eligible to join (effective 1 Oct 2022, per Official Gazette notification Aug 2022).",
     "officialEligibilityHi": "18 से 40 वर्ष के सभी भारतीय नागरिक जिनका बचत बैंक खाता है। आयकरदाता इसमें शामिल होने के पात्र नहीं हैं।",
     "officialAge": "18 to 40 years",
-    "officialIncome": "Not specified in official source (no numeric income ceiling; statutory exclusion of income-tax payers)",
+    "officialIncome": "No numeric income ceiling. Statutory exclusion applies to income-tax payers (not an income amount threshold). maxIncome sentinel 10,000,000 used — engine treats this as no upper bound. CORRECTION: Previous value of 500,000 was incorrect (no ₹5L cap exists). Source: PFRDA / Official Gazette Aug 2022.",
     "officialDisability": "Not specified in official source",
     "officialSource": "https://www.npscra.nsdl.co.in / https://enps.nsdl.com (PFRDA, Ministry of Finance)"
   },
@@ -648,7 +648,7 @@
       "Worker"
     ],
     "minAge": 18,
-    "maxAge": 60,
+    "maxAge": 120,
     "gender": "All",
     "socialCategory": [
       "General",
@@ -668,9 +668,9 @@
     ],
     "applyLink": "https://pmvishwakarma.gov.in",
     "disability": "Any",
-    "officialEligibility": "Traditional artisans and craftspeople working with hands and tools in one of 18 recognized traditional trades (including Darzi/Tailor, Carpenter, Blacksmith, Potter, Mason, Cobbler). Family members in government service excluded.",
+    "officialEligibility": "Traditional artisans and craftspeople working with hands and tools in one of 18 recognized traditional trades (including Darzi/Tailor, Carpenter, Blacksmith, Potter, Mason, Cobbler). Family members in government service excluded. Only one member per family is eligible.",
     "officialEligibilityHi": "18 मान्यता प्राप्त पारंपरिक व्यवसायों (दर्जी, बढ़ई, लोहार, कुम्हार आदि) में हाथों और औजारों से काम करने वाले कारीगर।",
-    "officialAge": "Minimum 18 years",
+    "officialAge": "Minimum 18 years. No official upper age limit. CORRECTION: maxAge updated from 60 to 120 (no upper limit sentinel). Source: pmvishwakarma.gov.in / myscheme.gov.in.",
     "officialIncome": "Not specified in official source (engaged in self-employment in traditional trade)",
     "officialDisability": "Not specified in official source",
     "officialSource": "https://pmvishwakarma.gov.in (Ministry of MSME & Ministry of Skill Development)"
@@ -719,7 +719,7 @@
     "category": "Central",
     "state": "All",
     "minIncome": 0,
-    "maxIncome": 350000,
+    "maxIncome": 250000,
     "occupation": [
       "Student"
     ],
@@ -727,15 +727,14 @@
     "maxAge": 18,
     "gender": "All",
     "socialCategory": [
-      "General",
       "OBC",
       "SC",
       "ST"
     ],
     "benefit": "Scholarship of ₹12,000-75,000/year for school students",
     "benefitHi": "स्कूली छात्रों के लिए ₹12,000-75,000/वर्ष की छात्रवृत्ति",
-    "description": "Scholarship for meritorious students from economically weaker and backward sections in Class 9-12",
-    "descriptionHi": "कक्षा 9-12 के आर्थिक रूप से कमजोर और पिछड़े वर्ग के मेधावी छात्रों के लिए छात्रवृत्ति",
+    "description": "Scholarship for meritorious students from OBC, EBC, and DNT sections in Class 9-12",
+    "descriptionHi": "कक्षा 9-12 के OBC, EBC और DNT वर्ग के मेधावी छात्रों के लिए छात्रवृत्ति",
     "documents": [
       "Aadhaar Card",
       "Academic Marksheet",
@@ -745,12 +744,12 @@
     ],
     "applyLink": "https://scholarships.gov.in",
     "disability": "Any",
-    "officialEligibility": "Meritorious students from OBC, EBC, DNT, and economically weaker sections studying in Class 9 to Class 12 in recognized schools with parental income up to ₹2.5-3.5 lakh.",
-    "officialEligibilityHi": "मान्यता प्राप्त स्कूलों में कक्षा 9 से 12 में पढ़ने वाले मेधावी छात्र जिनकी पारिवारिक आय ₹2.5-3.5 लाख से कम हो।",
+    "officialEligibility": "Meritorious students from OBC, EBC (Economically Backward Classes), and DNT (Denotified, Nomadic, Semi-Nomadic Tribes) sections studying in Class 9 to Class 12 in recognized schools with parental annual income up to ₹2,50,000.",
+    "officialEligibilityHi": "मान्यता प्राप्त स्कूलों में कक्षा 9 से 12 में पढ़ने वाले OBC, EBC और DNT वर्ग के मेधावी छात्र जिनकी पारिवारिक आय ₹2,50,000 से कम हो।",
     "officialAge": "Not specified in official source (typically 12 to 18 years based on school grade)",
-    "officialIncome": "Annual family income ≤ ₹2,50,000 to ₹3,50,000 depending on specific sub-scheme",
+    "officialIncome": "Annual family income ≤ ₹2,50,000. CORRECTION: maxIncome updated from 350,000 to 250,000 and socialCategory updated to OBC/SC/ST (General not a primary target category). Source: dosje.gov.in / scholarships.gov.in.",
     "officialDisability": "Not specified in official source",
-    "officialSource": "https://scholarships.gov.in (Ministry of Social Justice and Empowerment / Ministry of Education)"
+    "officialSource": "https://scholarships.gov.in (Ministry of Social Justice and Empowerment)"
   },
   {
     "id": 20,
@@ -772,8 +771,8 @@
       "SC",
       "ST"
     ],
-    "benefit": "High sovereign interest (8.2%) with EEE tax exemption",
-    "benefitHi": "8.2% की उच्च ब्याज दर और पूर्ण कर छूट (EEE)",
+    "benefit": "High sovereign interest rate with EEE tax exemption (rate currently 8.2% p.a. — reviewed quarterly by Government of India)",
+    "benefitHi": "उच्च ब्याज दर और पूर्ण कर छूट (EEE) — वर्तमान दर 8.2% प्रतिवर्ष, सरकार द्वारा तिमाही समीक्षा",
     "description": "Small deposit savings scheme for girl child with high government interest and tax benefits",
     "descriptionHi": "उच्च ब्याज और कर लाभ के साथ बालिकाओं के लिए लघु बचत योजना",
     "documents": [
@@ -797,12 +796,12 @@
     "category": "Central",
     "state": "All",
     "minIncome": 0,
-    "maxIncome": 500000,
+    "maxIncome": 10000000,
     "occupation": [
       "All"
     ],
     "minAge": 0,
-    "maxAge": 21,
+    "maxAge": 120,
     "gender": "Female",
     "socialCategory": [
       "General",
@@ -812,18 +811,18 @@
     ],
     "benefit": "Institutional welfare support, education access, and advocacy",
     "benefitHi": "संस्थागत कल्याणकारी सहायता, शिक्षा प्रोत्साहन और जागरूकता",
-    "description": "National advocacy campaign to improve child sex ratio and promote girl child education",
-    "descriptionHi": "बाल लिंगानुपात में सुधार और बालिकाओं की शिक्षा को बढ़ावा देने के लिए राष्ट्रीय अभियान",
+    "description": "National advocacy campaign to improve child sex ratio and promote girl child education. Note: BBBP does NOT offer direct cash transfers or individual deposit accounts to citizens; it is an awareness and institutional initiative.",
+    "descriptionHi": "बाल लिंगानुपात में सुधार और बालिकाओं की शिक्षा को बढ़ावा देने के लिए राष्ट्रीय अभियान। नोट: यह सीधे नकद हस्तांतरण नहीं करता; यह जागरूकता अभियान है।",
     "documents": [
       "Birth Certificate",
       "School ID / Anganwadi Registration"
     ],
     "applyLink": "https://wcd.nic.in",
     "disability": "Any",
-    "officialEligibility": "National campaign for all girl children across India. Note: BBBP is an advocacy and institutional awareness initiative; it does NOT offer direct cash transfers or individual deposit accounts to citizens.",
+    "officialEligibility": "National campaign for all girl children across India. Note: BBBP is an advocacy and institutional awareness initiative; it does NOT offer direct cash transfers or individual deposit accounts to citizens. No income restriction. No individual age cutoff.",
     "officialEligibilityHi": "भारत भर की सभी बालिकाओं के लिए राष्ट्रीय अभियान। नोट: यह जन-जागरूकता और संस्थागत अभियान है, इसमें कोई प्रत्यक्ष नकद हस्तांतरण नहीं होता है।",
-    "officialAge": "Not specified in official source (comprehensive child welfare initiative)",
-    "officialIncome": "Not specified in official source (no income restriction; public advocacy initiative without direct cash transfer)",
+    "officialAge": "Not specified in official source (comprehensive child welfare initiative; no individual age cutoff)",
+    "officialIncome": "Not specified in official source (no income restriction; public advocacy initiative without direct cash transfer). CORRECTION: maxIncome updated from 500,000 to 10,000,000 and maxAge updated from 21 to 120 — BBBP has no individual means-testing or age cutoff. Source: wcd.nic.in / Ministry of WCD.",
     "officialDisability": "Not specified in official source",
     "officialSource": "https://wcd.nic.in (Ministry of Women and Child Development)"
   },

@@ -4,6 +4,7 @@
  */
 
 import { t, getLang } from './i18n.js';
+import { getBackendUrl, escapeHtml, sanitizeUrl, authFetch } from './utils.js';
 
 let schemesData = [];
 let currentUserData = null;
@@ -24,13 +25,13 @@ export function initSchemeResults({ onBack }) {
 
 async function loadSchemes() {
   try {
-    const backendUrl =
-      localStorage.getItem('jansahayak-backend-url') ||
-      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-        ? 'http://localhost:8000'
-        : 'https://jansahayakai-ukbl.onrender.com');
-    const res = await fetch(`${backendUrl}/api/schemes`);
-    schemesData = await res.json();
+    const backendUrl = getBackendUrl();
+    const res = await authFetch(`${backendUrl}/api/schemes`, { timeout: 15000 });
+    if (res.ok) {
+      schemesData = await res.json();
+    } else {
+      console.error('Failed to load schemes catalog: HTTP', res.status);
+    }
   } catch (e) {
     console.error('Failed to load schemes:', e);
     schemesData = [];
@@ -38,32 +39,97 @@ async function loadSchemes() {
 }
 
 // ——— Render Results (called from app.js) ———
-export function renderResults(userData) {
+export async function renderResults(userData) {
   currentUserData = userData;
-  matchedSchemes = filterSchemes(userData);
-
   showResultsView();
-  renderSchemeCards();
-  updateResultsHeader();
+
+  const container = document.getElementById('scheme-cards-container');
+  if (container) {
+    container.innerHTML = `
+      <div style="grid-column:1/-1;text-align:center;padding:3rem">
+        <div class="spinner" style="margin:0 auto"></div>
+        <p style="margin-top:1rem;color:var(--color-text-muted)">Evaluating scheme eligibility with verified government rules...</p>
+      </div>`;
+  }
+
+  // Ensure schemes data catalog is loaded
+  if (!schemesData || schemesData.length === 0) {
+    await loadSchemes();
+  }
+
+  // Authoritative backend deterministic evaluation (sole source of truth)
+  try {
+    const backendUrl = getBackendUrl();
+    const evalPayload = {
+      age: userData.age !== undefined && userData.age !== '' ? parseInt(userData.age, 10) : null,
+      income: userData.income !== undefined && userData.income !== '' ? parseFloat(userData.income) : null,
+      state: userData.state || null,
+      gender: userData.gender || null,
+      occupation: userData.occupation || null,
+      socialCategory: userData.category || userData.socialCategory || null,
+      disability: userData.disability || null,
+      maritalStatus: userData.maritalStatus || null,
+      ownsCultivableLand: userData.ownsCultivableLand === true || userData.ownsCultivableLand === 'true' || userData.ownsCultivableLand === 'yes' ? true : (userData.ownsCultivableLand === false || userData.ownsCultivableLand === 'false' || userData.ownsCultivableLand === 'no' ? false : null),
+      isInstitutionalLandholder: Boolean(userData.isInstitutionalLandholder),
+      isConstitutionalPostHolder: Boolean(userData.isConstitutionalPostHolder),
+      isGovernmentEmployee: Boolean(userData.isGovernmentEmployee),
+      monthlyPensionGte10k: Boolean(userData.monthlyPensionGte10k),
+      isIncomeTaxPayer: Boolean(userData.isIncomeTaxPayer),
+      isRegisteredProfessional: Boolean(userData.isRegisteredProfessional)
+    };
+
+    const res = await authFetch(`${backendUrl}/api/schemes/evaluate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(evalPayload),
+      timeout: 15000
+    });
+
+    if (!res.ok) {
+      throw new Error(`Evaluation service returned HTTP ${res.status}`);
+    }
+
+    const evalData = await res.json();
+    if (evalData && Array.isArray(evalData.results)) {
+      const resultMap = new Map(evalData.results.map(r => [r.scheme_id, r]));
+      // Match schemes based purely on authoritative backend status
+      const authoritativeMatched = [];
+      schemesData.forEach(scheme => {
+        const evalResult = resultMap.get(scheme.id);
+        if (evalResult && evalResult.status === 'ELIGIBLE') {
+          const enriched = { ...scheme, evaluationReasons: evalResult.reasons };
+          authoritativeMatched.push(enriched);
+        }
+      });
+      matchedSchemes = authoritativeMatched;
+      renderSchemeCards();
+      updateResultsHeader();
+      return;
+    }
+    throw new Error('Malformed evaluation response');
+  } catch (err) {
+    console.error('Authoritative evaluation failed:', err);
+    matchedSchemes = [];
+    updateResultsHeader();
+    if (container) {
+      const isTimeout = err.name === 'TimeoutError' || err.isTimeout;
+      const msg = isTimeout
+        ? 'Eligibility check timed out. Please verify your connection and try again.'
+        : 'Authoritative eligibility service is temporarily unavailable. Please try again.';
+      container.innerHTML = `
+        <div class="empty-state" style="grid-column:1/-1">
+          <div class="icon">⚠️</div>
+          <h3>Eligibility Service Unavailable</h3>
+          <p>${escapeHtml(msg)}</p>
+          <button id="retry-eval-btn" class="btn btn-primary btn-sm" style="margin-top:1rem">Try Again</button>
+        </div>`;
+      document.getElementById('retry-eval-btn')?.addEventListener('click', () => {
+        renderResults(userData);
+      });
+    }
+  }
 }
 
-/** Identical matching logic from SchemeResults.tsx */
-function filterSchemes(userData) {
-  return schemesData.filter(scheme => {
-    const stateMatch = scheme.state === 'All' || scheme.state === userData.state;
-    const incomeMatch = userData.income >= scheme.minIncome && userData.income <= scheme.maxIncome;
-    const ageMatch = userData.age >= scheme.minAge && userData.age <= scheme.maxAge;
-    const categoryMatch = scheme.socialCategory.includes(userData.category);
-    const occupationMatch = scheme.occupation.includes('All') || scheme.occupation.includes(userData.occupation);
-    const genderMatch = scheme.gender === 'All' || scheme.gender === userData.gender;
-    const disabilityMatch = scheme.disability === 'Any'
-      || (scheme.disability === 'Yes' && userData.disability === 'Yes')
-      || (scheme.disability === 'No' && userData.disability === 'No');
-    const maritalMatch = !scheme.maritalStatus || scheme.maritalStatus === userData.maritalStatus;
-
-    return stateMatch && incomeMatch && ageMatch && categoryMatch && occupationMatch && genderMatch && disabilityMatch && maritalMatch;
-  });
-}
 
 function updateResultsHeader() {
   const matchText = document.getElementById('results-match-text');
@@ -120,7 +186,7 @@ function createSchemeCard(scheme, lang) {
     </div>
     <div class="scheme-actions">
       <button class="btn btn-primary btn-sm" data-scheme-id="${scheme.id}" aria-label="Know more about ${escapeHtml(name)}">${t('knowMore')}</button>
-      <a href="${scheme.applyLink}" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm" aria-label="Apply for ${escapeHtml(name)}">
+      <a href="${sanitizeUrl(scheme.applyLink)}" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm" aria-label="Apply for ${escapeHtml(name)}">
         🔗 ${t('applyNow')}
       </a>
     </div>
@@ -131,6 +197,9 @@ function createSchemeCard(scheme, lang) {
 }
 
 function getEligibilityReasons(scheme, lang) {
+  if (scheme.evaluationReasons && Array.isArray(scheme.evaluationReasons) && scheme.evaluationReasons.length > 0) {
+    return scheme.evaluationReasons;
+  }
   const u = currentUserData;
   if (!u) return [];
   const reasons = [];
@@ -139,9 +208,9 @@ function getEligibilityReasons(scheme, lang) {
     reasons.push(`Age: ${u.age} years`);
   if (u.income <= scheme.maxIncome)
     reasons.push(`Income: ₹${Number(u.income).toLocaleString('en-IN')}`);
-  if (scheme.socialCategory.includes(u.category))
-    reasons.push(`Category: ${u.category}`);
-  if (scheme.occupation.includes(u.occupation))
+  if (scheme.socialCategory && scheme.socialCategory.includes(u.category || u.socialCategory))
+    reasons.push(`Category: ${u.category || u.socialCategory}`);
+  if (scheme.occupation && scheme.occupation.includes(u.occupation))
     reasons.push(`Occupation: ${u.occupation}`);
   return reasons;
 }
@@ -278,17 +347,9 @@ function renderSchemeDetail(scheme) {
     <!-- Official Link -->
     <div>
       <h3 style="margin-bottom:0.75rem">🔗 ${t('officialLink')}</h3>
-      <a href="${scheme.applyLink}" target="_blank" rel="noopener noreferrer" class="btn btn-primary" aria-label="Apply for ${escapeHtml(name)}">
+      <a href="${sanitizeUrl(scheme.applyLink)}" target="_blank" rel="noopener noreferrer" class="btn btn-primary" aria-label="Apply for ${escapeHtml(name)}">
         🚀 ${t('applyNow')}
       </a>
     </div>
   `;
-}
-
-function escapeHtml(str) {
-  return String(str || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
 }

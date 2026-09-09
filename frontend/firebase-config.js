@@ -25,10 +25,9 @@ try {
   window.db   = firebase.firestore();
   window.auth = firebase.auth();
   window.firebaseReady = true;
-  console.log("✅ Firebase initialized successfully");
 } catch (e) {
-  // Log the EXACT error so we can diagnose it
-  console.error("❌ Firebase initialization failed:", e.code, e.message, e);
+  // Log error code and message only — avoid exposing full internal stack
+  console.error("Firebase initialization failed:", e.code || 'unknown', e.message || String(e));
   window.firebaseReady = false;
   window.db   = null;
   window.auth = null;

@@ -1,18 +1,12 @@
 /**
  * admin.js – Admin Dashboard
  * View all applications, update statuses, show analytics
- * Admin access controlled by email whitelist
+ * Backend is authoritative for admin access — frontend does not implement admin access control.
  */
 import { t } from './i18n.js';
 import { getCurrentUser } from './auth.js';
 import { showToast } from './app.js';
-
-const BACKEND_URL =
-  localStorage.getItem('jansahayak-backend-url') ||
-  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? 'http://localhost:8000'
-    : 'https://jansahayakai-ukbl.onrender.com');
-const ADMIN_EMAILS = ['admin@jansahayak.in', 'admin@test.com'];
+import { getBackendUrl, formatDate, escapeHtml, authFetch } from './utils.js';
 
 export async function initAdmin() {
   const user = getCurrentUser();
@@ -24,28 +18,29 @@ export async function initAdmin() {
     return;
   }
 
-  const isAdmin = ADMIN_EMAILS.includes(user.email) || user.isDemo;
-
-  if (!isAdmin) {
-    if (tableBody) tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--color-text-muted)">${t('noAdminAccess')}</td></tr>`;
-    return;
-  }
-
   // Show loading
   if (tableBody) tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:2rem"><div class="spinner" style="margin:0 auto"></div></td></tr>`;
 
   document.getElementById('admin-refresh-btn')?.addEventListener('click', initAdmin);
 
   let applications = [];
+  let loadError = null;
 
   try {
-    const resp = await fetch(`${BACKEND_URL}/api/admin/applications`);
+    const resp = await authFetch(`${getBackendUrl()}/api/admin/applications`);
     if (resp.ok) {
       const data = await resp.json();
       applications = data.applications || [];
-    } else throw new Error('Backend unavailable');
-  } catch {
-    // Try Firestore
+    } else if (resp.status === 401 || resp.status === 403) {
+      // Backend denied access — show permission denied, do not fall back to fake data
+      if (tableBody) tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--color-text-muted)">${t('noAdminAccess')}</td></tr>`;
+      if (analyticsGrid) analyticsGrid.innerHTML = '';
+      return;
+    } else {
+      throw new Error(`Backend returned HTTP ${resp.status}`);
+    }
+  } catch (err) {
+    // Try Firestore as secondary source (admin access verified by Firestore rules)
     if (window.firebaseReady && window.db) {
       try {
         const snap = await window.db.collection('applications')
@@ -55,12 +50,18 @@ export async function initAdmin() {
         applications = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       } catch (fbErr) {
         console.warn('Firestore read failed:', fbErr);
+        loadError = 'Database temporarily unavailable.';
       }
+    } else {
+      loadError = 'Service unavailable. Please try again later.';
     }
 
-    // Demo data fallback
-    if (!applications.length) {
-      applications = getDemoApplications();
+    // If both sources failed: show honest error — never show fabricated data
+    if (!applications.length && loadError) {
+      if (tableBody) tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--color-text-muted)">⚠️ ${escapeHtml(loadError)}</td></tr>`;
+      if (analyticsGrid) analyticsGrid.innerHTML = '';
+      showToast('Could not load applications. ' + loadError, 'error');
+      return;
     }
   }
 
@@ -162,12 +163,12 @@ function createTableRow(app) {
 
 async function updateApplicationStatus(appId, newStatus, app) {
   try {
-    const resp = await fetch(`${BACKEND_URL}/api/applications/${appId}/status`, {
+    const resp = await authFetch(`${getBackendUrl()}/api/applications/${appId}/status`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: newStatus })
     });
-    if (!resp.ok) throw new Error('Backend error');
+    if (!resp.ok) throw new Error(`Backend error: ${resp.status}`);
     showToast(`Status updated to: ${newStatus}`, 'success');
   } catch {
     // Firestore fallback
@@ -197,25 +198,3 @@ function updateLocalStatus(appId, newStatus) {
   } catch (e) {}
 }
 
-// Demo data for when nothing is available
-function getDemoApplications() {
-  return [
-    { id: 'demo-1', applicationId: 'APP-1748000001', userEmail: 'user1@example.com', userId: 'user1', serviceName: 'Aadhaar Correction', status: 'submitted', submittedAt: new Date(Date.now() - 86400000).toISOString() },
-    { id: 'demo-2', applicationId: 'APP-1748000002', userEmail: 'user2@example.com', userId: 'user2', serviceName: 'Scholarship Form', status: 'reviewing', submittedAt: new Date(Date.now() - 172800000).toISOString() },
-    { id: 'demo-3', applicationId: 'APP-1748000003', userEmail: 'user3@example.com', userId: 'user3', serviceName: 'Pension Scheme', status: 'approved', submittedAt: new Date(Date.now() - 259200000).toISOString() },
-    { id: 'demo-4', applicationId: 'APP-1748000004', userEmail: 'user4@example.com', userId: 'user4', serviceName: 'Income Certificate', status: 'rejected', submittedAt: new Date(Date.now() - 345600000).toISOString() },
-    { id: 'demo-5', applicationId: 'APP-1748000005', userEmail: 'user5@example.com', userId: 'user5', serviceName: 'Ration Card', status: 'reviewing', submittedAt: new Date(Date.now() - 432000000).toISOString() }
-  ];
-}
-
-function formatDate(dateStr) {
-  if (!dateStr) return '—';
-  try {
-    const d = new Date(dateStr.seconds ? dateStr.seconds * 1000 : dateStr);
-    return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-  } catch { return '—'; }
-}
-
-function escapeHtml(str) {
-  return String(str || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}

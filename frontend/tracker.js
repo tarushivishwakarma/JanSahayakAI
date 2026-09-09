@@ -6,12 +6,7 @@
 import { t, getLang } from './i18n.js';
 import { getCurrentUser } from './auth.js';
 import { showToast } from './app.js';
-
-const BACKEND_URL =
-  localStorage.getItem('jansahayak-backend-url') ||
-  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? 'http://localhost:8000'
-    : 'https://jansahayakai-ukbl.onrender.com');
+import { getBackendUrl, formatDate, escapeHtml, authFetch } from './utils.js';
 
 export async function initTracker() {
   const user = getCurrentUser();
@@ -34,18 +29,51 @@ export async function initTracker() {
   container.innerHTML = `<div class="flex-center" style="padding:2rem"><div class="spinner"></div></div>`;
 
   let applications = [];
+  let isDegraded = false;
+  let serviceError = null;
 
   try {
-    // Try backend API first
-    const resp = await fetch(`${BACKEND_URL}/api/applications/user/${user.uid}`, {
-      headers: { 'X-User-ID': user.uid }
-    });
+    // Try backend API first with verified authentication
+    const backendUrl = getBackendUrl();
+    const resp = await authFetch(`${backendUrl}/api/applications/user/${user.uid}`, { timeout: 15000 });
     if (resp.ok) {
       const data = await resp.json();
       applications = data.applications || [];
-    } else throw new Error('Backend unavailable');
-  } catch {
-    // Try Firestore
+    } else if (resp.status === 401) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="icon">🔒</div>
+          <h3>${t('trackerTitle')}</h3>
+          <p>Your session has expired. Please sign in again.</p>
+          <button class="btn btn-primary" onclick="document.getElementById('nav-login-btn').click()" style="margin-top:1rem">
+            ${t('navLogin')}
+          </button>
+        </div>`;
+      return;
+    } else if (resp.status === 403) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="icon">🚫</div>
+          <h3>${t('trackerTitle')}</h3>
+          <p>Access denied.</p>
+        </div>`;
+      return;
+    } else if (resp.status === 503) {
+      serviceError = 'Application service is temporarily unavailable.';
+      throw new Error('503');
+    } else {
+      serviceError = 'Unable to reach the server. Please try again.';
+      throw new Error(`HTTP ${resp.status}`);
+    }
+  } catch (err) {
+    if (!serviceError) {
+      const isTimeout = err.name === 'TimeoutError' || err.isTimeout;
+      serviceError = isTimeout
+        ? 'Unable to reach the server. Please try again.'
+        : 'Unable to reach the server. Please try again.';
+    }
+
+    // Attempt secondary fallback to Firestore
     if (window.firebaseReady && window.db) {
       try {
         const snap = await window.db.collection('applications')
@@ -54,22 +82,40 @@ export async function initTracker() {
           .limit(20)
           .get();
         applications = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        if (applications.length > 0) isDegraded = true;
       } catch (fbErr) {
-        console.warn('Firestore read failed:', fbErr);
+        console.warn('Firestore fallback read failed:', fbErr.code || 'FIRESTORE_ERROR');
       }
     }
 
     // Fallback to localStorage
     if (!applications.length) {
-      const local = JSON.parse(localStorage.getItem('jansahayak-applications') || '[]');
-      applications = local.filter(a => a.userId === user.uid || a.userId === 'anonymous');
+      try {
+        const local = JSON.parse(localStorage.getItem('jansahayak-applications') || '[]');
+        applications = local.filter(a => a.userId === user.uid || a.userId === 'anonymous');
+        if (applications.length > 0) isDegraded = true;
+      } catch (e) {}
+    }
+
+    // If no fallback data exists: show authoritative error with retry, not false empty state
+    if (!applications.length) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="icon">⚠️</div>
+          <h3>${t('trackerTitle')}</h3>
+          <p>${escapeHtml(serviceError)}</p>
+          <button class="btn btn-primary btn-sm" id="tracker-retry-btn" style="margin-top:1rem">Try Again</button>
+        </div>`;
+      document.getElementById('tracker-retry-btn')?.addEventListener('click', initTracker);
+      return;
     }
   }
 
-  renderTrackerCards(container, applications);
+  renderTrackerCards(container, applications, isDegraded);
 }
 
-function renderTrackerCards(container, applications) {
+
+function renderTrackerCards(container, applications, isDegraded = false) {
   if (!applications.length) {
     container.innerHTML = `
       <div class="empty-state">
@@ -86,11 +132,20 @@ function renderTrackerCards(container, applications) {
   }
 
   container.innerHTML = '';
+  if (isDegraded) {
+    const banner = document.createElement('div');
+    banner.className = 'glass';
+    banner.style.cssText = 'padding:0.75rem 1rem;margin-bottom:1.5rem;border-left:4px solid #f59e0b;font-size:0.875rem;color:var(--color-text-muted);border-radius:var(--radius-sm);';
+    banner.innerHTML = `⚠️ <strong>Authoritative application service is temporarily unreachable.</strong> Showing cached application records. Processing status updates may be delayed.`;
+    container.appendChild(banner);
+  }
+
   applications.forEach(app => {
     const card = createTrackerCard(app);
     container.appendChild(card);
   });
 }
+
 
 function createTrackerCard(app) {
   const status = app.status || 'submitted';
@@ -118,16 +173,4 @@ function createTrackerCard(app) {
     </div>
   `;
   return card;
-}
-
-function formatDate(dateStr) {
-  if (!dateStr) return '—';
-  try {
-    const d = new Date(dateStr.seconds ? dateStr.seconds * 1000 : dateStr);
-    return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-  } catch { return '—'; }
-}
-
-function escapeHtml(str) {
-  return String(str || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }

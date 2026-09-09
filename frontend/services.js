@@ -2,6 +2,7 @@
  * services.js – Smart Service Dashboard (6 government services)
  */
 import { t } from './i18n.js';
+import { escapeHtml } from './utils.js';
 
 let onServiceSelectCb = null;
 
@@ -25,9 +26,6 @@ export function renderServiceCards() {
     const card = document.createElement('div');
     card.className = 'glass service-card animate-in';
     card.style.animationDelay = `${i * 0.08}s`;
-    card.setAttribute('tabindex', '0');
-    card.setAttribute('role', 'button');
-    card.setAttribute('aria-label', `Apply for ${service.title}`);
 
     card.innerHTML = `
       <div class="service-icon" style="background:${service.color}22;color:${service.color}">
@@ -40,28 +38,12 @@ export function renderServiceCards() {
       </button>
     `;
 
-    const btn = card.querySelector('.btn');
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
+    // Click anywhere on card to select service
+    card.addEventListener('click', () => {
       if (onServiceSelectCb) onServiceSelectCb(service.id);
-    });
-
-    // Keyboard support on the card
-    card.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        if (onServiceSelectCb) onServiceSelectCb(service.id);
-      }
     });
 
     grid.appendChild(card);
   });
 }
 
-function escapeHtml(str) {
-  return String(str || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}

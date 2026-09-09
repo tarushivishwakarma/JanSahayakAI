@@ -2,17 +2,36 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Applications: users can read/write their own; admins can read all
-    match /applications/{appId} {
-      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
-      allow create: if request.auth != null;
-      allow read, write: if request.auth != null &&
-        request.auth.token.email in ['admin@jansahayak.in', 'admin@test.com'];
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
     }
 
-    // Diagnostics (for testing only – remove in production)
-    match /_diagnostics/{docId} {
-      allow read, write: if true;
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.admin == true ||
+        (request.auth.token.email != null && request.auth.token.email == 'admin@jansahayak.in')
+      );
+    }
+
+    // Applications:
+    // - Create: Authenticated users can only create applications with their own userId.
+    // - Read/Update/Delete: Permitted only to the application owner or authorized admins.
+    // NOTE: Server-side Firebase Admin SDK calls bypass these rules;
+    // backend token and role verification in FastAPI remains strictly mandatory.
+    match /applications/{appId} {
+      allow create: if isAuthenticated() &&
+        request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if isOwner(resource.data.userId) || isAdmin();
+    }
+
+    // Explicit deny for all other collections
+    match /{document=**} {
+      allow read, write: if false;
     }
 
   }

@@ -58,8 +58,8 @@ function renderAuthUI(user) {
     document.getElementById('nav-username').textContent = displayName;
     document.getElementById('nav-avatar').textContent = displayName[0].toUpperCase();
 
-    // Show admin link if admin
-    const adminEmails = ['admin@jansahayak.in', 'admin@test.com']; // Configurable
+    // Show admin link if admin (UI convenience only; backend enforces authoritative RBAC)
+    const adminEmails = ['admin@jansahayak.in'];
     const isAdmin = adminEmails.includes(user.email);
     document.getElementById('nav-admin-btn').style.display = isAdmin ? '' : 'none';
     document.getElementById('m-nav-admin').style.display = isAdmin ? '' : 'none';

@@ -6,6 +6,7 @@
 
 import { t, getLang } from './i18n.js';
 import { initVoice, startListening, stopListening, getIsListening, setVoiceLang, isVoiceSupported } from './voice.js';
+import { getBackendUrl, authFetch } from './utils.js';
 
 // ——— SCHEME FINDER CHATBOT ———
 
@@ -298,12 +299,6 @@ export function initFaqChatbot() {
     }
   });
 }
-
-const BACKEND_URL =
-  localStorage.getItem('jansahayak-backend-url') ||
-  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? 'http://localhost:8000'
-    : 'https://jansahayakai-ukbl.onrender.com');
 
 function showFaqTypingIndicator() {
   const container = document.getElementById('faq-messages');
@@ -656,7 +651,7 @@ async function sendFaqMessage(overrideText) {
   const timeoutId = setTimeout(() => controller.abort(), 45000);
 
   try {
-    const response = await fetch(`${BACKEND_URL}/api/llm/chat`, {
+    const response = await authFetch(`${getBackendUrl()}/api/llm/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -670,6 +665,9 @@ async function sendFaqMessage(overrideText) {
     removeFaqTypingIndicator();
 
     if (!response.ok) {
+      if (response.status === 429) {
+        throw new Error('429');
+      }
       throw new Error(`HTTP ${response.status}`);
     }
 
@@ -686,10 +684,14 @@ async function sendFaqMessage(overrideText) {
     console.error('JanSahayak AI Floating Chatbot Error:', error.message || error);
 
     // Friendly localized fallback message
-    const fallbackMsg = t('faqAiUnavailable') ||
-      (getLang() === 'hi'
-        ? 'अभी AI से उत्तर प्राप्त नहीं हो पा रहा है। मैं आधार, PAN, पेंशन, छात्रवृत्ति, राशन कार्ड और आय प्रमाण पत्र जैसी सेवाओं में सहायता कर सकता हूँ। आप किसी सरकारी योजना के बारे में भी पूछ सकते हैं।'
-        : 'I\'m unable to get an AI response right now. I can still help with supported services such as Aadhaar, PAN, Pension, Scholarship, Ration Card and Income Certificate. You can also try asking about a specific government scheme.');
+    const fallbackMsg = error.message === '429'
+      ? (getLang() === 'hi'
+          ? 'आप बहुत तेज़ी से प्रश्न पूछ रहे हैं। कृपया कुछ क्षण प्रतीक्षा करें।'
+          : 'You are sending messages too quickly. Please wait a moment before trying again.')
+      : (t('faqAiUnavailable') ||
+        (getLang() === 'hi'
+          ? 'अभी AI से उत्तर प्राप्त नहीं हो पा रहा है। मैं आधार, PAN, पेंशन, छात्रवृत्ति, राशन कार्ड और आय प्रमाण पत्र जैसी सेवाओं में सहायता कर सकता हूँ। आप किसी सरकारी योजना के बारे में भी पूछ सकते हैं।'
+          : 'I\'m unable to get an AI response right now. I can still help with supported services such as Aadhaar, PAN, Pension, Scholarship, Ration Card and Income Certificate. You can also try asking about a specific government scheme.'));
 
     addFaqBotMessage(fallbackMsg);
     renderFaqSuggestions();

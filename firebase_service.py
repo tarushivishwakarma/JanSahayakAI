@@ -5,8 +5,11 @@ Initializes Firebase Admin once and provides helper functions.
 
 import os
 import json
-from datetime import datetime
+import logging
+from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any
+
+logger = logging.getLogger("jansahayak.firebase")
 
 # Lazy import to avoid hard failure if firebase-admin is not installed
 try:
@@ -15,21 +18,31 @@ try:
     FIREBASE_AVAILABLE = True
 except ImportError:
     FIREBASE_AVAILABLE = False
-    print("⚠️  firebase-admin not installed. Install with: pip install firebase-admin")
+    logger.warning("firebase-admin not installed. Install with: pip install firebase-admin")
 
 _db = None  # Firestore client singleton
 
 
-def init_firebase():
+def is_initialized() -> bool:
+    """Return True if Firebase Admin is initialized with an active Firestore client."""
+    return bool(FIREBASE_AVAILABLE and firebase_admin._apps and _db is not None)
+
+
+def init_firebase() -> bool:
     """Initialize Firebase Admin SDK (call once on startup)"""
     global _db
 
     if not FIREBASE_AVAILABLE:
+        logger.warning("Firebase Admin unavailable: package not installed.")
         return False
 
     if firebase_admin._apps:
-        _db = fs.client()
-        return True
+        try:
+            _db = fs.client()
+            return True
+        except Exception as e:
+            logger.error("Error obtaining Firestore client from existing app: %s", e)
+            return False
 
     # Try JSON file path first
     sa_path = os.getenv("FIREBASE_SERVICE_ACCOUNT_PATH", "")
@@ -42,16 +55,16 @@ def init_firebase():
             sa_dict = json.loads(sa_json)
             cred = credentials.Certificate(sa_dict)
         else:
-            print("⚠️  Firebase credentials not configured. Running without Firestore.")
+            logger.warning("Firebase credentials not configured. Running without Firestore.")
             return False
 
         firebase_admin.initialize_app(cred)
         _db = fs.client()
-        print("✅ Firebase Admin initialized")
+        logger.info("Firebase Admin and Firestore initialized successfully")
         return True
 
     except Exception as e:
-        print(f"⚠️  Firebase init failed: {e}")
+        logger.error("Firebase initialization failed: %s", e)
         return False
 
 
@@ -67,26 +80,33 @@ async def create_application(data: Dict[str, Any]) -> str:
     if not _db:
         raise RuntimeError("Firestore not available")
     doc_ref = _db.collection("applications").document()
-    data["createdAt"] = datetime.utcnow()
-    data["updatedAt"] = datetime.utcnow()
+    now_iso = datetime.now(timezone.utc).isoformat()
+    data["createdAt"] = now_iso
+    data["updatedAt"] = now_iso
     doc_ref.set(data)
     return doc_ref.id
 
 
 async def get_application_by_id(app_id: str) -> Optional[Dict]:
-    """Fetch a single application by Firestore document ID"""
+    """Fetch a single application by Firestore document ID or citizen applicationId"""
     if not _db:
-        return None
+        raise RuntimeError("Firestore not available")
+    # 1. Try directly by document ID
     doc = _db.collection("applications").document(app_id).get()
     if doc.exists:
         return {"id": doc.id, **doc.to_dict()}
+
+    # 2. Try by citizen applicationId (e.g. APP-XXXX)
+    docs = _db.collection("applications").where("applicationId", "==", app_id).limit(1).stream()
+    for d in docs:
+        return {"id": d.id, **d.to_dict()}
     return None
 
 
 async def get_user_applications(user_id: str) -> List[Dict]:
-    """Fetch all applications for a given user"""
+    """Fetch all applications for a given user from authoritative Firestore"""
     if not _db:
-        return []
+        raise RuntimeError("Firestore not available")
     docs = (
         _db.collection("applications")
         .where("userId", "==", user_id)
@@ -98,9 +118,9 @@ async def get_user_applications(user_id: str) -> List[Dict]:
 
 
 async def get_all_applications(limit: int = 100) -> List[Dict]:
-    """Fetch all applications (admin only)"""
+    """Fetch all applications (admin only) from authoritative Firestore"""
     if not _db:
-        return []
+        raise RuntimeError("Firestore not available")
     docs = (
         _db.collection("applications")
         .order_by("submittedAt", direction=fs.Query.DESCENDING)
@@ -111,15 +131,28 @@ async def get_all_applications(limit: int = 100) -> List[Dict]:
 
 
 async def update_application_status(app_id: str, status: str) -> bool:
-    """Update the status of an application"""
+    """Update the status of an application in authoritative Firestore"""
     if not _db:
-        return False
-    try:
-        _db.collection("applications").document(app_id).update({
+        raise RuntimeError("Firestore not available")
+    now_iso = datetime.now(timezone.utc).isoformat()
+
+    # 1. Try by document ID
+    doc_ref = _db.collection("applications").document(app_id)
+    doc = doc_ref.get()
+    if doc.exists:
+        doc_ref.update({
             "status": status,
-            "updatedAt": datetime.utcnow()
+            "updatedAt": now_iso
         })
         return True
-    except Exception as e:
-        print(f"Error updating status: {e}")
-        return False
+
+    # 2. Try by citizen applicationId
+    docs = _db.collection("applications").where("applicationId", "==", app_id).limit(1).stream()
+    for d in docs:
+        d.reference.update({
+            "status": status,
+            "updatedAt": now_iso
+        })
+        return True
+
+    return False

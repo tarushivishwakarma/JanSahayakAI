@@ -5,6 +5,7 @@
 import { t, getLang } from './i18n.js';
 import { showToast } from './app.js';
 import { getCurrentUser } from './auth.js';
+import { getBackendUrl, escapeHtml, authFetch } from './utils.js';
 
 let currentServiceId = null;
 let currentStepIndex = 0;
@@ -112,11 +113,14 @@ function renderStep() {
     `;
   }
 
-  const isLast = currentStepIndex === steps.length - 1;
+  const isSelect = step.type === 'select' && step.options;
+  const labelElement = isSelect
+    ? `<p class="wizard-question">${escapeHtml(step.question)}</p>`
+    : `<label for="wizard-input" class="wizard-question" style="display:block">${escapeHtml(step.question)}</label>`;
 
   container.innerHTML = `
     <div class="wizard-step">
-      <p class="wizard-question">${escapeHtml(step.question)}</p>
+      ${labelElement}
       ${step.hint ? `<p class="wizard-hint">${escapeHtml(step.hint)}</p>` : ''}
 
       ${inputHtml}
@@ -177,6 +181,9 @@ function goToNextStep() {
     currentStepIndex++;
     renderStep();
   } else {
+    // Guard against double-submit
+    const submitBtn = document.getElementById('wizard-next');
+    if (submitBtn && submitBtn.disabled) return;
     submitForm();
   }
 }
@@ -214,6 +221,15 @@ function validateStep(step, value) {
 
 async function submitForm() {
   const user = getCurrentUser();
+
+  // Disable submit button immediately to prevent double-submission
+  const submitBtn = document.getElementById('wizard-next');
+  const originalBtnText = submitBtn ? submitBtn.innerHTML : '';
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `<span class="spinner" style="width:1rem;height:1rem;margin-right:0.5rem;display:inline-block"></span> Submitting…`;
+  }
+
   const applicationData = {
     serviceId: currentServiceId,
     serviceName: t('wizardServices')[currentServiceId]?.name || currentServiceId,
@@ -225,39 +241,53 @@ async function submitForm() {
     applicationId: 'APP-' + Date.now()
   };
 
+  // 30-second timeout for cold-start Render instances
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
+
   try {
-    // Try to save to backend API
+    // Save to backend API using authenticated fetch
     const backendUrl = getBackendUrl();
-    const resp = await fetch(`${backendUrl}/api/applications`, {
+    const resp = await authFetch(`${backendUrl}/api/applications`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(applicationData)
+      body: JSON.stringify(applicationData),
+      signal: controller.signal
     });
+    clearTimeout(timeoutId);
 
-    if (!resp.ok) throw new Error('Backend error');
+    if (!resp.ok) {
+      const errJson = await resp.json().catch(() => null);
+      const statusMsg = resp.status === 401 ? 'Session expired. Please log in again.'
+        : resp.status === 503 ? 'Server temporarily unavailable. Your draft has been saved.'
+        : errJson?.detail || `Submission failed (status ${resp.status})`;
+      throw new Error(statusMsg);
+    }
+
     const result = await resp.json();
     applicationData.applicationId = result.application_id || applicationData.applicationId;
+    applicationData.id = result.id || applicationData.applicationId;
+
+    // Clear saved draft ONLY after confirmed backend success
+    clearOfflineProgress(currentServiceId);
+
+    if (onSubmitSuccessCb) onSubmitSuccessCb(applicationData);
 
   } catch (err) {
-    // Fallback: save to Firestore if available
-    if (window.firebaseReady && window.db && getCurrentUser()) {
-      try {
-        await window.db.collection('applications').add({
-          ...applicationData,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-      } catch (fbErr) {
-        console.warn('Firestore save failed:', fbErr);
-      }
+    clearTimeout(timeoutId);
+    console.error('Application submission error:', err);
+    // Re-enable button so user can retry
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = originalBtnText;
     }
-    // Always save to localStorage as offline backup
-    saveApplicationLocally(applicationData);
+    // Preserve typed inputs as draft so citizen does not lose data
+    saveOfflineProgress(currentServiceId, formData);
+    const userMsg = err.name === 'AbortError'
+      ? 'Request timed out. Your draft has been saved. Please try again.'
+      : err.message || 'Application could not be saved to the database. Please try again.';
+    showToast(userMsg, 'error');
   }
-
-  // Clear saved progress
-  clearOfflineProgress(currentServiceId);
-
-  if (onSubmitSuccessCb) onSubmitSuccessCb(applicationData);
 }
 
 // ——— Offline Support ———
@@ -299,19 +329,3 @@ export function autoFillFromOcr(ocrData) {
   renderStep();
 }
 
-function getBackendUrl() {
-  return (
-    localStorage.getItem('jansahayak-backend-url') ||
-    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-      ? 'http://localhost:8000'
-      : 'https://jansahayakai-ukbl.onrender.com')
-  );
-}
-
-function escapeHtml(str) {
-  return String(str || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}

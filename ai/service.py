@@ -1,18 +1,88 @@
 import json
+import logging
 import os
 import re
+from typing import Any, Dict, List
 import httpx
 from .config import LLM_API_KEY, LLM_MODEL, LLM_BASE_URL
 from .schemas import ChatRequest
+from core.eligibility import evaluate_all_schemes
+from core.ai_validator import validate_ai_response
 
-# Load schemes data once to keep in memory for reference
+logger = logging.getLogger("jansahayak.ai")
+
+# Load schemes data once at module import; log failures with structured logger
 SCHEMES_DATA = []
 try:
     schemes_path = os.path.join(os.path.dirname(__file__), "..", "schemes.json")
     with open(schemes_path, "r", encoding="utf-8") as f:
         SCHEMES_DATA = json.load(f)
+    logger.info("AI service: loaded %d schemes for LLM grounding", len(SCHEMES_DATA))
 except Exception as e:
-    print(f"Warning: Could not load schemes data for LLM service: {e}")
+    logger.error("AI service: could not load schemes.json for LLM grounding: %s", type(e).__name__)
+
+
+def mask_pii_text(text: str) -> str:
+    """
+    Masks sensitive identifiers like Aadhaar and PAN numbers in text.
+    - Aadhaar: 12 digits (with optional spaces or dashes) -> XXXX-XXXX-1234
+    - PAN: 5 uppercase letters, 4 digits, 1 uppercase letter -> XXXXX1234X
+    Does not redact non-identifier numbers (e.g. age, income, pincodes).
+    """
+    if not text or not isinstance(text, str):
+        return text
+
+    # Aadhaar masking: match 12 digits formatted as 4-4-4 or 12 continuous digits
+    text = re.sub(
+        r'\b\d{4}[-\s]?\d{4}[-\s]?(\d{4})\b',
+        r'XXXX-XXXX-\1',
+        text
+    )
+
+    # PAN masking: 5 letters, 4 digits, 1 letter (e.g., ABCDE1234F -> XXXXX1234X)
+    text = re.sub(
+        r'\b[A-Za-z]{5}(\d{4})[A-Za-z]\b',
+        r'XXXXX\1X',
+        text
+    )
+
+    return text
+
+
+def sanitize_context(context: Any) -> Any:
+    """
+    Sanitizes context dictionaries or lists before passing to LLM.
+    - Masks Aadhaar and PAN values.
+    - Removes unnecessary full street addresses while keeping high-level region if available.
+    - Drops raw binary/image data or raw document text to prevent sensitive data leakage.
+    - Preserves eligibility-relevant fields (age, income, occupation, category, state).
+    """
+    if isinstance(context, dict):
+        sanitized = {}
+        for k, v in context.items():
+            k_str = str(k).lower()
+            # Drop unnecessary raw images or raw extracted text
+            if k_str in ("image", "document_image", "raw_image", "raw_text", "raw_extracted_text"):
+                continue
+            # Redact full street addresses
+            if k_str in ("address", "full_address", "street_address", "residential_address", "permanent_address"):
+                sanitized[k] = "[Address redacted for privacy]"
+                continue
+            # If the key itself is explicitly aadhaar or pan, ensure masked
+            if "aadhaar" in k_str:
+                sanitized[k] = mask_pii_text(str(v))
+                continue
+            if "pan" in k_str and ("number" in k_str or "card" in k_str or k_str == "pan"):
+                sanitized[k] = mask_pii_text(str(v))
+                continue
+            sanitized[k] = sanitize_context(v)
+        return sanitized
+    elif isinstance(context, list):
+        return [sanitize_context(item) for item in context]
+    elif isinstance(context, str):
+        return mask_pii_text(context)
+    else:
+        return context
 
 
 def _find_mentioned_schemes(text: str):
@@ -190,18 +260,37 @@ async def generate_chat_response(request: ChatRequest) -> str:
 
     # 1. Specific scheme context (explicitly passed or detected from query)
     if request.scheme_context:
-        system_prompt += f"PRIMARY SCHEME CONTEXT (User is actively viewing/inquiring about this scheme):\n{json.dumps(request.scheme_context, ensure_ascii=False)}\n\n"
+        safe_scheme_ctx = sanitize_context(request.scheme_context)
+        system_prompt += f"PRIMARY SCHEME CONTEXT (User is actively viewing/inquiring about this scheme):\n{json.dumps(safe_scheme_ctx, ensure_ascii=False)}\n\n"
     elif detected_schemes:
         focused_schemes = [_format_scheme_summary(s) for s in detected_schemes]
         system_prompt += f"MATCHED SCHEME DETAILS (User inquired about these specific verified schemes):\n{json.dumps(focused_schemes, ensure_ascii=False)}\n\n"
 
-    # 2. Document context (OCR or user document fields)
+    # 2. Document context (OCR or user document fields) - PII sanitized
     if request.document_context:
-        system_prompt += f"DOCUMENT CONTEXT (Extracted fields from user document):\n{json.dumps(request.document_context, ensure_ascii=False)}\n\n"
+        safe_doc_ctx = sanitize_context(request.document_context)
+        system_prompt += f"DOCUMENT CONTEXT (Extracted fields from user document):\n{json.dumps(safe_doc_ctx, ensure_ascii=False)}\n\n"
 
-    # 3. User profile context (if available)
+    # 3. User profile context (if available) - PII sanitized & Deterministically Evaluated
     if request.user_context:
-        system_prompt += f"USER PROFILE CONTEXT:\n{json.dumps(request.user_context, ensure_ascii=False)}\n\n"
+        safe_user_ctx = sanitize_context(request.user_context)
+        system_prompt += f"USER PROFILE CONTEXT:\n{json.dumps(safe_user_ctx, ensure_ascii=False)}\n\n"
+        try:
+            eval_res = evaluate_all_schemes(request.user_context)
+            eligible_lines = [f"- {r.scheme_name}: {'; '.join(r.reasons[:2])}" for r in eval_res.results if r.status == "ELIGIBLE"]
+            ineligible_lines = [f"- {r.scheme_name} (INELIGIBLE): {'; '.join(r.reasons[:2])}" for r in eval_res.results if r.status == "INELIGIBLE"]
+            unknown_lines = [f"- {r.scheme_name} (UNKNOWN: Missing {', '.join(r.missing_fields)})" for r in eval_res.results if r.status == "UNKNOWN"]
+            system_prompt += (
+                "VERIFIED DETERMINISTIC ELIGIBILITY RESULTS (GROUND TRUTH):\n"
+                f"Eligible Schemes ({len(eligible_lines)}):\n" + ("\n".join(eligible_lines) if eligible_lines else "None") + "\n\n"
+                f"Ineligible Schemes ({len(ineligible_lines)}):\n" + ("\n".join(ineligible_lines) if ineligible_lines else "None") + "\n\n"
+                f"Unknown Status ({len(unknown_lines)}):\n" + ("\n".join(unknown_lines[:5]) if unknown_lines else "None") + "\n\n"
+                "STRICT GROUNDING DIRECTIVE: Never state or imply that the user qualifies for any scheme listed as INELIGIBLE. "
+                "For schemes with UNKNOWN status (such as PM-Kisan without verified landholding), clearly explain the requirement "
+                "and ask for the missing criteria before stating eligibility.\n\n"
+            )
+        except Exception as e:
+            logger.warning("AI: could not pre-evaluate scheme eligibility for prompt grounding: %s", type(e).__name__)
 
     # 4. Compact Verified Schemes Catalog
     catalog_lines = "\n".join([_format_compact_scheme(s) for s in SCHEMES_DATA])
@@ -209,7 +298,7 @@ async def generate_chat_response(request: ChatRequest) -> str:
 
     api_messages = [{"role": "system", "content": system_prompt}]
     for msg in request.messages:
-        api_messages.append({"role": msg.role, "content": msg.content})
+        api_messages.append({"role": msg.role, "content": mask_pii_text(msg.content)})
 
     headers = {
         "Authorization": f"Bearer {LLM_API_KEY}",
@@ -241,38 +330,40 @@ async def generate_chat_response(request: ChatRequest) -> str:
                     data = response.json()
 
                     # Robust response extraction
+                    raw_content = ""
                     if "choices" in data and len(data["choices"]) > 0:
                         choice = data["choices"][0]
                         message = choice.get("message", {})
-                        content = message.get("content", "")
-                        if content and content.strip():
-                            return content.strip()
-
-                    # Handle non-OpenAI or Gemini raw format if returned
-                    if "candidates" in data and len(data["candidates"]) > 0:
+                        raw_content = message.get("content", "")
+                    elif "candidates" in data and len(data["candidates"]) > 0:
                         candidate = data["candidates"][0]
                         parts = candidate.get("content", {}).get("parts", [])
                         text_parts = [p.get("text", "") for p in parts if p.get("text")]
                         if text_parts:
-                            return "".join(text_parts).strip()
+                            raw_content = "".join(text_parts)
+
+                    if raw_content and raw_content.strip():
+                        # Run through hallucination and ground truth validator
+                        validated = validate_ai_response(raw_content.strip(), request.user_context)
+                        return validated["sanitized_text"]
 
                     raise ValueError("Empty or unexpected response structure from AI provider.")
                 except (httpx.RemoteProtocolError, httpx.ConnectError, httpx.TimeoutException) as e:
-                    print(f"Transient connection error ({model_name} attempt {attempt + 1}): {type(e).__name__}")
+                    logger.warning("AI: transient connection error (%s attempt %d): %s", model_name, attempt + 1, type(e).__name__)
                     last_error = e
                     import asyncio
                     await asyncio.sleep(0.8)
                     continue
                 except httpx.HTTPStatusError as e:
                     if e.response.status_code in (404, 429, 503):
-                        print(f"Model {model_name} returned {e.response.status_code}, falling back to alternative model...")
+                        logger.warning("AI: model %s returned HTTP %d, trying fallback model", model_name, e.response.status_code)
                         last_error = e
                         break  # Fall back to next model candidate
-                    print(f"LLM API HTTP error ({model_name}): {e.response.status_code}")
+                    logger.error("AI: LLM API HTTP error (%s): %d", model_name, e.response.status_code)
                     last_error = e
                     break
                 except Exception as e:
-                    print(f"LLM API general error ({model_name}): {type(e).__name__} - {e}")
+                    logger.error("AI: LLM API general error (%s): %s", model_name, type(e).__name__)
                     last_error = e
                     break
 
