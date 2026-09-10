@@ -104,13 +104,15 @@ Open http://localhost:5500 in your browser.
 ## Running Tests
 
 ```bash
-# Run complete test suite (128 tests)
+# Run complete test suite (138 tests)
 python -m unittest discover -s tests -v
 
-# Check frontend JS syntax
-node -c frontend/admin.js && node -c frontend/form-wizard.js && \
-node -c frontend/scheme-results.js && node -c frontend/ocr.js && \
-node -c frontend/chatbot.js && node -c frontend/tracker.js
+# Check frontend JS syntax (all modules directly under frontend/)
+node -c frontend/app.js && node -c frontend/auth.js && node -c frontend/landing.js && \
+node -c frontend/chatbot.js && node -c frontend/scheme-results.js && node -c frontend/services.js && \
+node -c frontend/form-wizard.js && node -c frontend/tracker.js && node -c frontend/admin.js && \
+node -c frontend/ocr.js && node -c frontend/utils.js && node -c frontend/i18n.js && \
+node -c frontend/voice.js && node -c frontend/accessibility.js && node -c frontend/firebase-config.js
 
 # Start backend (health check)
 uvicorn main:app --port 8001
@@ -198,5 +200,4 @@ JanSahayakAI/
 ## Important Notes
 
 - All 25 schemes in `schemes.json` have been audited against official government sources. **7 schemes contain unverified fields** — see [LIMITATIONS.md](docs/LIMITATIONS.md).
-- The project is on branch `feature/security-hardening`. `main` is the original production baseline.
-- Do not deploy from `feature/security-hardening` without final integration testing.
+- The `main` branch is the production canonical source of truth containing all completed hardening phases, verified scheme data, and full test suite pass.

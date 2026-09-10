@@ -57,6 +57,9 @@ node -c frontend/utils.js
 node -c frontend/firebase-config.js
 node -c frontend/i18n.js
 node -c frontend/auth.js
+node -c frontend/accessibility.js
+node -c frontend/landing.js
+node -c frontend/voice.js
 ```
 
 ---
